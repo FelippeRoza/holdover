@@ -43,8 +43,8 @@ new editedgone
 R="$ROOT/editedgone"
 lines 10 "$R/keep.py"; lines 10 "$R/edit.py"; lines 10 "$R/delete.py"
 git -C "$R" add -A; at "$R" 2025-01-01T00:00:00 "agent adds three files" "" "$AGENT"
-sed -i '' 's/edit.py line 3/edit.py line 3 REWRITTEN/' "$R/edit.py"   # 1 line edited
-sed -i '' '/edit.py line 7/d' "$R/edit.py"                            # 1 line removed
+perl -pi -e 's/edit.py line 3/edit.py line 3 REWRITTEN/' "$R/edit.py"   # 1 line edited
+perl -ni -e 'print unless /edit.py line 7/' "$R/edit.py"               # 1 line removed
 rm "$R/delete.py"                                                     # 10 lines gone
 git -C "$R" add -A; at "$R" 2025-02-01T00:00:00 "human edits and deletes"
 
@@ -86,7 +86,7 @@ GIT_AUTHOR_DATE="2025-06-01T00:00:00 +0000" GIT_COMMITTER_DATE="2025-06-01T00:00
 new reformat
 R="$ROOT/reformat"
 lines 20 "$R/wide.py"; git -C "$R" add -A; at "$R" 2025-01-01T00:00:00 "agent adds wide.py" "" "$AGENT"
-sed -i '' 's/$/  /' "$R/wide.py"   # trailing whitespace on every line
+perl -pi -e 's/$/  /' "$R/wide.py"   # trailing whitespace on every line
 git -C "$R" add -A; at "$R" 2025-02-01T00:00:00 "style: reformat everything"
 git -C "$R" rev-parse HEAD > "$R/.git-blame-ignore-revs"
 git -C "$R" add -A; at "$R" 2025-02-02T00:00:00 "add blame ignore list"
