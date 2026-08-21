@@ -1,0 +1,30 @@
+{
+  "name": "holdover",
+  "version": "0.1.0",
+  "description": "Measure how much of an AI coding agent's output is still in a git repo, and compare it to the humans on the same repo.",
+  "keywords": [
+    "git",
+    "ai",
+    "coding-agent",
+    "blame",
+    "survival",
+    "metrics"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "holdover": "src/cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "PREREGISTRATION.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\""
+  }
+}
