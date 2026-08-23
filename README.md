@@ -192,7 +192,10 @@ report instead.
 ## Four repos, four different answers
 
 Measured with the shipped defaults at the 90-day horizon. This is the whole case for
-reporting the diagnostics rather than the number:
+reporting the diagnostics rather than the number. Twenty repos measured the same way
+are in [RESULTS.md](RESULTS.md), where the median gap is +3.0 pp with an interquartile
+range from -5.1 to +10.7, and the two estimators disagree in sign on 6 of the 14 repos
+that clear the line floor:
 
 | repo | AI n | AI kept | human kept | pooled | typical | new-file share | verdict |
 | --- | --- | --- | --- | --- | --- | --- | --- |

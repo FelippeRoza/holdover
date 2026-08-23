@@ -1,0 +1,34 @@
+# The repos measured in RESULTS.md. One slug per line, # for comments.
+#
+# Hand-picked, NOT the pre-registered panel in PREREGISTRATION.md. Chosen for
+# recognisability and for a mix of agent-vendor repos and repos that merely use
+# agents, then filtered by a GitHub commit search for the attribution signals in
+# src/attribution.js. A repo with no hits was dropped before measuring, so the
+# selection is not blind to the attribution signal — it is blind to the outcome.
+
+# agent vendors' own repos
+openai/codex
+aaif-goose/goose
+OpenHands/OpenHands
+anomalyco/opencode
+anthropics/claude-code
+cline/cline
+RooCodeInc/Roo-Code
+Aider-AI/aider
+charmbracelet/crush
+continuedev/continue
+
+# repos that use agents but do not sell one
+browser-use/browser-use
+mem0ai/mem0
+pydantic/pydantic-ai
+stanfordnlp/dspy
+danny-avila/LibreChat
+crewAIInc/crewAI
+modelcontextprotocol/servers
+ghostty-org/ghostty
+pola-rs/polars
+supabase/supabase
+
+# the pilot repo, reported separately and excluded from the summary
+getzep/graphiti
