@@ -74,31 +74,35 @@ try {
       { maxBuffer: 1 << 26 });
   }
 
+  // Exit code is set, never taken. `process.exit` with a report already handed
+  // to `process.stdout` truncates it at the pipe buffer — 64 KiB on macOS — so
+  // `holdover --json | jq` silently lost every repo bigger than a toy, and the
+  // `finally` below never ran, leaking the clone. Falling off the end instead
+  // lets stdout drain and the scratch directory go away.
   if (!await isRepo(cwd)) {
     process.stderr.write(`not a git repository: ${cwd}\n`);
-    process.exit(1);
+    process.exitCode = 1;
+  } else {
+    cwd = await toplevel(cwd);
+    const name = isSlug ? target : await repoName(cwd);
+
+    if (values.decompose) {
+      let n = 0;
+      const rows = await decompose(cwd, () => progress(`definition ${++n}`));
+      if (!values.quiet && !values.json) process.stderr.write('\r\x1b[2K');
+      process.stdout.write((values.json
+        ? JSON.stringify({ repo: name, decomposition: rows }, null, 2)
+        : renderDecomposition(rows, name)) + '\n');
+    } else {
+      const result = await measure(cwd, {
+        horizons, winsor, branch: values.branch, onProgress: progress,
+      });
+      if (!values.quiet && !values.json) process.stderr.write('\r\x1b[2K');
+
+      process.stdout.write((values.json ? json(result, name) : human(result, name)) + '\n');
+      process.exitCode = result.unmeasurable ? 3 : 0;
+    }
   }
-
-  cwd = await toplevel(cwd);
-  const name = isSlug ? target : await repoName(cwd);
-
-  if (values.decompose) {
-    let n = 0;
-    const rows = await decompose(cwd, () => progress(`definition ${++n}`));
-    if (!values.quiet && !values.json) process.stderr.write('\r\x1b[2K');
-    process.stdout.write((values.json
-      ? JSON.stringify({ repo: name, decomposition: rows }, null, 2)
-      : renderDecomposition(rows, name)) + '\n');
-    process.exit(0);
-  }
-
-  const result = await measure(cwd, {
-    horizons, winsor, branch: values.branch, onProgress: progress,
-  });
-  if (!values.quiet && !values.json) process.stderr.write('\r\x1b[2K');
-
-  process.stdout.write((values.json ? json(result, name) : human(result, name)) + '\n');
-  process.exit(result.unmeasurable ? 3 : 0);
 } finally {
   if (scratch) await rm(scratch, { recursive: true, force: true });
 }

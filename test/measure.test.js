@@ -310,3 +310,17 @@ test('per-commit rows are exposed so the headline can be rechecked', async () =>
     assert.ok(row.addedInNewFiles <= row.added);
   }
 });
+
+test('a report larger than the pipe buffer survives the pipe', async () => {
+  // `process.exit` with a report already handed to `process.stdout` drops
+  // whatever the pipe has not accepted yet — 64 KiB on macOS — so this passed
+  // to a terminal and to a file, and silently truncated `holdover --json | jq`.
+  // Many horizons is the cheap way to a report bigger than the buffer.
+  const horizons = Array.from({ length: 250 }, (_, i) => i + 1).join(',');
+  const { stdout } = await exec('node',
+    [join(here, '..', 'src', 'cli.js'), join(FX, 'editedgone'),
+      '--json', '--quiet', '--horizons', horizons],
+    { maxBuffer: 1 << 26 });
+  assert.ok(stdout.length > 65536, `report was ${stdout.length} bytes, expected > 64 KiB`);
+  assert.equal(JSON.parse(stdout).cohorts.length, 250);
+});
