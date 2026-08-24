@@ -100,8 +100,10 @@ and including if the difference is not distinguishable from zero.
   line-weighted average across repositories will be published, because one
   bot-heavy repository would then determine the result.
 - **All three horizons are published for every repository.** On `openai/codex` the
-  gap has run +6.9 pp at 30 days, +3.2 pp at 90 and -5.7 pp at 180, on over 480,000
-  lines at the longest horizon; see [RESULTS.md](RESULTS.md) for the current run. Reporting the 90-day figure alone would be choosing
+  gap runs -5.3 pp at 30 days, +2.0 pp at 90 and -6.8 pp at 180, changing sign
+  twice, while `Aider-AI/aider` holds +22.0, +22.2, +22.5 across the same three.
+  Whether one horizon speaks for a repo is a property of the repo. See
+  [RESULTS.md](RESULTS.md) for the current run. Reporting the 90-day figure alone would be choosing
   the answer. The 90-day figure remains the pre-registered headline; the other two
   are reported beside it in every table.
 - **Reference point.** Cohorts are measured from the arrival date of the tip of

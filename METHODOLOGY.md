@@ -237,7 +237,7 @@ Stated plainly, because most of them cannot be fixed.
   per-invocation choice made by the person deciding whether the work is worth
   attributing, and the repos with the most agent history are the agent vendors'
   own. Agent commit share across the twenty repos in [RESULTS.md](RESULTS.md) has a
-  median of 3.1% and a range from 0.1% to 31%.
+  median of 3.1% and a range from 0.1% to 30%.
 - **Squashed PRs are dropped, not measured, and that can empty a repo.** A
   multi-commit squash carrying agent attribution is reported as `unattributable`.
   On a repo that squash-merges everything, this can leave nothing to measure, and
