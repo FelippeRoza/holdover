@@ -49,15 +49,15 @@ Median and IQR are the inverse-ECDF quantile, Hyndman-Fan type 1.
 | `charmbracelet/crush` | 17,349 | 2,121 | 80.7% | 43.8% | +36.9 pp | +37.2 pp | +40.9 pp | +47.0 pp | 58.7% vs 40.8% | 40.0% | new-file share 17.9 pp apart |
 | `continuedev/continue` | 19,222 | 8,883 | 55.6% | 55.0% | +0.6 pp | +10.6 pp | +9.4 pp | +23.3 pp | 56.8% vs 41.7% | 26.0% | estimators 22.7 pp apart; new-file share 15.1 pp apart |
 | `browser-use/browser-use` | 14,238 | 0 | 20.5% | 41.6% | -21.1 pp | -16.6 pp | -14.1 pp | -13.4 pp | 47.7% vs 37.3% | 23.7% | no threshold tripped |
-| `mem0ai/mem0` | 30,408 | 0 | 71.3% | 70.9% | +0.4 pp | +20.5 pp | +17.4 pp | +8.9 pp | 53.8% vs 61.7% | 43.7% | size-standardised gap is +20.5 pp pp, 20.1 pp off the pooled one |
+| `mem0ai/mem0` | 30,408 | 0 | 71.3% | 70.9% | +0.4 pp | +20.5 pp | +17.4 pp | +8.9 pp | 53.8% vs 61.7% | 43.7% | size-standardised gap is +20.5 pp, 20.1 pp off the pooled one |
 | `pydantic/pydantic-ai` | 142,042 | 0 | 87.2% | 74.4% | +12.9 pp | +18.7 pp | +20.2 pp | +10.8 pp | 49.4% vs 56.6% | 29.1% | no threshold tripped |
-| `stanfordnlp/dspy` | 555 | 13,242 | 96.0% | 93.0% | +3.0 pp | — | +60.5 pp | +1.5 pp | 0.0% vs 37.2% | 67.2% | below the 2,000-line floor; new-file share 37.2 pp apart; size strata cover only 17.2% of the lines, so no standardised gap |
+| `stanfordnlp/dspy` | 555 | 13,242 | 96.0% | 93.0% | +3.0 pp | — | — | +1.5 pp | 0.0% vs 37.2% | 67.2% | below the 2,000-line floor; new-file share 37.2 pp apart; size strata cover only 17.2% of the lines, so no standardised gap; new-file strata cover only 43.5% of the lines, so no standardised gap |
 | `danny-avila/LibreChat` | 1,052 | 41,170 | 97.1% | 84.9% | +12.2 pp | — | +33.7 pp | +7.7 pp | 8.6% vs 47.9% | 100.0% | below the 2,000-line floor; new-file share 39.3 pp apart; size strata cover only 23.3% of the lines, so no standardised gap |
 | `crewAIInc/crewAI` | 1,547 | 170,651 | 50.5% | 56.7% | -6.2 pp | — | +30.5 pp | +17.4 pp | 25.5% vs 51.5% | 56.8% | below the 2,000-line floor; estimators disagree in sign, 23.6 pp apart; new-file share 26.0 pp apart; size strata cover only 5.6% of the lines, so no standardised gap |
 | `modelcontextprotocol/servers` | 3,111 | 895 | 76.4% | 48.7% | +27.6 pp | +26.1 pp | +37.7 pp | +58.1 pp | 45.9% vs 39.6% | 63.3% | estimators 30.5 pp apart |
-| `ghostty-org/ghostty` | 2,490 | 0 | 68.2% | 74.8% | -6.6 pp | +18.5 pp | +13.6 pp | +5.2 pp | 25.1% vs 28.1% | 52.9% | estimators disagree in sign, 11.7 pp apart; size-standardised gap is +18.5 pp pp, 25.1 pp off the pooled one |
+| `ghostty-org/ghostty` | 2,490 | 0 | 68.2% | 74.8% | -6.6 pp | +18.5 pp | +13.6 pp | +5.2 pp | 25.1% vs 28.1% | 52.9% | estimators disagree in sign, 11.7 pp apart; size-standardised gap is +18.5 pp, 25.1 pp off the pooled one |
 | `pola-rs/polars` | 561 | 0 | 94.3% | 84.9% | +9.4 pp | — | +42.1 pp | +1.9 pp | 5.7% vs 27.6% | 69.0% | below the 2,000-line floor; new-file share 21.8 pp apart; size strata cover only 44.3% of the lines, so no standardised gap; 2 commits have a committer date before their parent's |
-| `supabase/supabase` | 4,163 | 92,827 | 82.5% | 67.6% | +14.9 pp | +44.2 pp | +42.5 pp | +9.4 pp | 8.6% vs 49.2% | 93.1% | new-file share 40.6 pp apart; size strata cover 71.4% of the lines; size-standardised gap is +44.2 pp pp, 29.2 pp off the pooled one |
+| `supabase/supabase` | 4,163 | 92,827 | 82.5% | 67.6% | +14.9 pp | +44.2 pp | +42.5 pp | +9.4 pp | 8.6% vs 49.2% | 93.1% | new-file share 40.6 pp apart; size strata cover 71.4% of the lines; size-standardised gap is +44.2 pp, 29.2 pp off the pooled one |
 | `getzep/graphiti` *(pilot)* | 2,786 | 21,823 | 76.4% | 81.2% | -4.8 pp | -6.6 pp | +10.2 pp | -98.2 pp | 67.0% vs 26.1% | 80.0% | estimators 93.4 pp apart; new-file share 40.8 pp apart; size strata cover 64.0% of the lines |
 
 `pooled` is the line-weighted difference in kept share, agent minus human. `typical` is

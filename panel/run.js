@@ -86,35 +86,28 @@ for (const slug of slugs) {
   });
 }
 
-/**
- * Paired difference held to commit-size strata, floor(log2(added)), which the
- * pre-registration asks for because commit size differs systematically between
- * the classes. Strata where one class has no lines carry no comparison and are
- * dropped, so the weight they held is reported too.
- */
-function sizeStandardised(r, days) {
-  const c = r.cohorts.find((x) => x.days === days);
-  if (!c) return null;
+/** The 90-day cohort's own rows, winsorised the way the published rate was. */
+function cohortRows(r, days) {
   const cutoff = r.reference - days * DAY;
-  const rows = winsorise(
+  return winsorise(
     r.commitRows.filter((x) => x.klass !== 'mixed' && x.arrival !== null && x.arrival <= cutoff),
     r.settings?.cap ?? Infinity,
   ).rows;
+}
 
-  const strata = new Map();
-  for (const row of rows) {
-    if (!row.added) continue;
-    const k = Math.floor(Math.log2(row.added));
-    let cell = strata.get(k);
-    if (!cell) { cell = { agent: [0, 0], human: [0, 0] }; strata.set(k, cell); }
-    cell[row.klass][0] += row.added;
-    cell[row.klass][1] += row.kept;
-  }
-
+/**
+ * Direct standardisation over strata of [lines, kept] per class, weighted by the
+ * lines in each stratum. A stratum only one class reaches carries no comparison
+ * and is dropped, so below COVERAGE of the lines the estimate describes a subset
+ * rather than the repo and no figure is given: dspy's size-standardised gap came
+ * out at +56.0 pp off 17% of its weight, which is what this project exists to
+ * refuse.
+ */
+function standardise(strata) {
   let weight = 0;
   let sum = 0;
   let dropped = 0;
-  for (const { agent, human } of strata.values()) {
+  for (const { agent, human } of strata) {
     if (!agent[0] || !human[0]) { dropped += agent[0] + human[0]; continue; }
     const w = agent[0] + human[0];
     weight += w;
@@ -122,46 +115,43 @@ function sizeStandardised(r, days) {
   }
   if (!weight) return null;
   const coverage = weight / (weight + dropped);
-  // Below half the lines the estimate describes a subset, not the repo. dspy's
-  // came out at +56.0 pp off 17% of its weight, which is the kind of number this
-  // project exists to refuse.
   return coverage < COVERAGE ? { gap: null, coverage } : { gap: (sum / weight) * 100, coverage };
 }
 
+/** Held to commit-size strata, floor(log2(added)). */
+function sizeStandardised(r, days) {
+  const strata = new Map();
+  for (const row of cohortRows(r, days)) {
+    if (!row.added) continue;
+    const k = Math.floor(Math.log2(row.added));
+    let cell = strata.get(k);
+    if (!cell) { cell = { agent: [0, 0], human: [0, 0] }; strata.set(k, cell); }
+    cell[row.klass][0] += row.added;
+    cell[row.klass][1] += row.kept;
+  }
+  return standardise(strata.values());
+}
+
 /**
- * Same paired difference, held to whether a line sits in a file its own commit
- * created. On the pilot repo that is 67% of agent lines against 26% of human
- * ones, and an external audit found it moved a gap from +10.0 pp to +0.6 pp.
- * Needs keptInNewFiles, so it is null for output from before that field existed.
+ * Held to whether a line sits in a file its own commit created. On the pilot repo
+ * that is 67% of agent lines against 26% of human ones, and an external audit
+ * found it moved a gap from +10.0 pp to +0.6 pp. There are only two strata, so
+ * losing one to the coverage rule is common and the figure is then absent.
  */
 function newFileStandardised(r, days) {
-  const cutoff = r.reference - days * DAY;
-  const rows = winsorise(
-    r.commitRows.filter((x) => x.klass !== 'mixed' && x.arrival !== null && x.arrival <= cutoff),
-    r.settings?.cap ?? Infinity,
-  ).rows;
+  const rows = cohortRows(r, days);
   if (rows.some((x) => x.keptInNewFiles === undefined)) return null;
-
-  const cell = { agent: [[0, 0], [0, 0]], human: [[0, 0], [0, 0]] };
+  const strata = [
+    { agent: [0, 0], human: [0, 0] },
+    { agent: [0, 0], human: [0, 0] },
+  ];
   for (const row of rows) {
-    const c = cell[row.klass];
-    c[0][0] += row.addedInNewFiles;
-    c[0][1] += row.keptInNewFiles;
-    c[1][0] += row.added - row.addedInNewFiles;
-    c[1][1] += row.kept - row.keptInNewFiles;
+    strata[0][row.klass][0] += row.addedInNewFiles;
+    strata[0][row.klass][1] += row.keptInNewFiles;
+    strata[1][row.klass][0] += row.added - row.addedInNewFiles;
+    strata[1][row.klass][1] += row.kept - row.keptInNewFiles;
   }
-
-  let weight = 0;
-  let sum = 0;
-  for (let i = 0; i < 2; i++) {
-    const [aLines, aKept] = cell.agent[i];
-    const [hLines, hKept] = cell.human[i];
-    if (!aLines || !hLines) continue;
-    const w = aLines + hLines;
-    weight += w;
-    sum += w * ((aKept / aLines) - (hKept / hLines));
-  }
-  return weight ? (sum / weight) * 100 : null;
+  return standardise(strata);
 }
 
 function summarise(r) {
@@ -188,13 +178,15 @@ function summarise(r) {
 
   const sizeStd = sizeStandardised(r, 90);
   const newFileStd = newFileStandardised(r, 90);
-  if (sizeStd && sizeStd.gap === null) {
-    flags.push(`size strata cover only ${dec(sizeStd.coverage)} of the lines, so no standardised gap`);
-  } else if (sizeStd && sizeStd.coverage < 0.8) {
-    flags.push(`size strata cover ${dec(sizeStd.coverage)} of the lines`);
+  for (const [what, std] of [['size', sizeStd], ['new-file', newFileStd]]) {
+    if (std?.gap === null) {
+      flags.push(`${what} strata cover only ${dec(std.coverage)} of the lines, so no standardised gap`);
+    } else if (std && std.coverage < 0.8) {
+      flags.push(`${what} strata cover ${dec(std.coverage)} of the lines`);
+    }
   }
   if (sizeStd?.gap !== null && sizeStd && Math.abs(sizeStd.gap - pooled) > SPREAD) {
-    flags.push(`size-standardised gap is ${pp(sizeStd.gap)} pp, ${Math.abs(sizeStd.gap - pooled).toFixed(1)} pp off the pooled one`);
+    flags.push(`size-standardised gap is ${pp(sizeStd.gap)}, ${Math.abs(sizeStd.gap - pooled).toFixed(1)} pp off the pooled one`);
   }
 
   return {
@@ -249,7 +241,7 @@ if (gaps.length) {
   L.push(`- ${measured.length} of ${eligible} repos measurable, ${scoring.length} above the pre-registered 2,000-line floor.`);
   const stds = scoring.map((r) => r.sizeStd?.gap).filter((v) => v !== undefined && v !== null);
   L.push(`- Median pooled gap at 90 days: **${pp(quantile(gaps, 0.5))}** (IQR ${bare(quantile(gaps, 0.25))} to ${pp(quantile(gaps, 0.75))}), over ${gaps.length} repos.`);
-  const newStds = scoring.map((r) => r.newFileStd).filter((v) => v !== undefined && v !== null);
+  const newStds = scoring.map((r) => r.newFileStd?.gap).filter((v) => v !== undefined && v !== null);
   L.push(`- Median size-standardised gap: **${pp(quantile(stds, 0.5))}** (IQR ${bare(quantile(stds, 0.25))} to ${pp(quantile(stds, 0.75))}), over the ${stds.length} repos whose strata cover enough of the lines. The pre-registration says the standardised figures win where they disagree with the crude one.`);
   if (newStds.length) {
     L.push(`- Median new-file-standardised gap: **${pp(quantile(newStds, 0.5))}** (IQR ${bare(quantile(newStds, 0.25))} to ${pp(quantile(newStds, 0.75))}), over ${newStds.length} repos.`);
@@ -286,7 +278,7 @@ for (const r of rows) {
   const notes = [...r.flags];
   if (r.dateViolations) notes.push(`${num(r.dateViolations)} commits have a committer date before their parent's`);
   L.push(`| ${tag} | ${num(c.agent.lines)} | ${num(r.mixed)} | ${pct(c.agent.kept, c.agent.lines)} | ${pct(c.human.kept, c.human.lines)} `
-    + `| ${pp(r.pooled)} | ${pp(r.sizeStd?.gap ?? null)} | ${pp(r.newFileStd)} | ${pp(r.typical)} | ${dec(c.agent.newFileShare)} vs ${dec(c.human.newFileShare)} `
+    + `| ${pp(r.pooled)} | ${pp(r.sizeStd?.gap ?? null)} | ${pp(r.newFileStd?.gap ?? null)} | ${pp(r.typical)} | ${dec(c.agent.newFileShare)} vs ${dec(c.human.newFileShare)} `
     + `| ${dec(c.agent.top5Share)} | ${notes.length ? notes.join('; ') : 'no threshold tripped'} |`);
 }
 L.push('');
