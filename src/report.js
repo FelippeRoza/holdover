@@ -8,6 +8,8 @@
 // disagree by tens of points, and reporting only the flattering one is how this
 // kind of tool goes wrong.
 
+import { headlineCohort } from './measure.js';
+
 const pct = (num, den) => (den ? `${((num / den) * 100).toFixed(1)}%` : '—');
 const pctOf = (frac) => (frac === null ? '—' : `${(frac * 100).toFixed(1)}%`);
 const num = (n) => n.toLocaleString('en-US');
@@ -49,7 +51,7 @@ export function human(result, name) {
   }
   L.push('');
 
-  const headline = cohorts.find((c) => c.days === 90) ?? cohorts[Math.floor(cohorts.length / 2)];
+  const headline = headlineCohort(cohorts);
   for (const c of cohorts) {
     const label = `  at ${c.days} days`.padEnd(23);
     if (c === headline) {

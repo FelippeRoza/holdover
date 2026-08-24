@@ -357,3 +357,12 @@ test('kept lines are split by whether their file was new', async () => {
   // The agent commit created all three files, so every kept line is in a new one.
   assert.equal(agent[0].keptInNewFiles, agent[0].kept);
 });
+
+test('the wholesale-replacement gate does not depend on the horizon list', async () => {
+  // It used to read a positional cohort, so a list without 90 pointed it at an
+  // empty one and it silently passed the repo through.
+  for (const horizons of [[90], [1, 200, 400], [1, 2, 3]]) {
+    const r = await measure(join(FX, 'replaced'), { horizons, winsor: 1 });
+    assert.match(r.unmeasurable ?? '', /retains almost nothing/, horizons.join(','));
+  }
+});

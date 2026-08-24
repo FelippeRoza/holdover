@@ -90,6 +90,14 @@ function apportion(parts, total) {
   return out;
 }
 
+/**
+ * The cohort the report expands and the degeneracy gate looks at. One rule, or a
+ * horizon list without 90 makes the gate examine a cohort nobody is shown.
+ */
+export function headlineCohort(cohorts) {
+  return cohorts.find((c) => c.days === 90) ?? cohorts[Math.floor(cohorts.length / 2)];
+}
+
 export function winsorise(rows, cap) {
   if (!Number.isFinite(cap)) return { rows, capped: 0, trimmed: 0, cap };
   let capped = 0;
@@ -342,11 +350,15 @@ export async function measure(startDir, opts = {}) {
   // lines and 0 of 301,298 human lines kept, printed as "+0.0 pp". That is not a
   // finding, it is an absence of data, and it should not enter a panel as a paired
   // difference of zero.
-  const headline = cohorts.find((c) => c.days === 90) ?? cohorts[cohorts.length - 1];
-  const degenerate = headline
-    && headline.agent.lines > 0 && headline.human.lines > 0
-    && headline.agent.kept / headline.agent.lines < 0.01
-    && headline.human.kept / headline.human.lines < 0.01;
+  // Judged on a cohort that actually has both classes in it. Keying off a
+  // positional guess meant a horizon list without 90 pointed the gate at an empty
+  // cohort, where `lines > 0` is false and the gate silently did nothing.
+  const judged = cohorts.filter((c) => c.agent.lines > 0 && c.human.lines > 0);
+  const gate = judged.find((c) => c.days === 90)
+    ?? judged.sort((a, b) => b.agent.lines - a.agent.lines)[0];
+  const degenerate = gate
+    && gate.agent.kept / gate.agent.lines < 0.01
+    && gate.human.kept / gate.human.lines < 0.01;
   if (degenerate) {
     return {
       unmeasurable: 'the tree at this ref retains almost nothing from before the '
