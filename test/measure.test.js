@@ -328,3 +328,18 @@ test('a report larger than the pipe buffer survives the pipe', async () => {
   assert.ok(stdout.length > 65536, `report was ${stdout.length} bytes, expected > 64 KiB`);
   assert.equal(JSON.parse(stdout).cohorts.length, 250);
 });
+
+test('an empty cohort is refused, not printed as dashes', async () => {
+  // A repo whose agent commits are all younger than the shortest horizon has no
+  // keep rate. The report used to print a table of dashes and exit 0.
+  const r = await measure(join(FX, 'editedgone'), { horizons: [3650], winsor: 1 });
+  assert.match(r.unmeasurable, /have had/);
+  assert.ok(r.all.agent.lines > 0, 'the counts are still returned');
+});
+
+test('winsorising keeps the three states summing to the clamped total', async () => {
+  const rows = [{ added: 9, kept: 3, edited: 3, gone: 3, reattributed: 0 }];
+  const { rows: [r] } = winsorise(rows, 4);
+  assert.equal(r.added, 4);
+  assert.equal(r.kept + r.edited + r.gone, 4);
+});

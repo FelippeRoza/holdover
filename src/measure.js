@@ -72,6 +72,24 @@ export function sharedCap(allRows, percentile) {
  * is counted as in the part that is dropped, which is an assumption, not a fact —
  * hence the reported count of clamped commits and trimmed lines.
  */
+/** Scale parts to a new total, keeping their sum exact. */
+function apportion(parts, total) {
+  const sum = parts.reduce((a, b) => a + b, 0);
+  if (!sum) return parts.map(() => 0);
+  const exact = parts.map((p) => (p * total) / sum);
+  const out = exact.map(Math.floor);
+  let left = total - out.reduce((a, b) => a + b, 0);
+  const order = exact
+    .map((v, i) => [v - Math.floor(v), i])
+    .sort((a, b) => b[0] - a[0]);
+  for (const [, i] of order) {
+    if (left <= 0) break;
+    out[i]++;
+    left--;
+  }
+  return out;
+}
+
 export function winsorise(rows, cap) {
   if (!Number.isFinite(cap)) return { rows, capped: 0, trimmed: 0, cap };
   let capped = 0;
@@ -81,13 +99,14 @@ export function winsorise(rows, cap) {
     const scale = cap / r.added;
     capped++;
     trimmed += r.added - cap;
+    const [kept, edited, gone] = apportion([r.kept, r.edited, r.gone], cap);
     return {
       ...r,
       added: cap,
       addedInNewFiles: Math.round((r.addedInNewFiles ?? 0) * scale),
-      kept: Math.round(r.kept * scale),
-      edited: Math.round(r.edited * scale),
-      gone: Math.round(r.gone * scale),
+      kept,
+      edited,
+      gone,
       reattributed: Math.round(r.reattributed * scale),
       wasCapped: true,
     };
@@ -341,7 +360,15 @@ export async function measure(startDir, opts = {}) {
     };
   }
 
+  // A cohort with nothing in it is not a rate. The report used to print a table
+  // of dashes and exit 0, which is the failure this tool exists to refuse. The
+  // counts are still returned, they just do not amount to a keep rate.
+  const barren = cohorts.every((c) => c.agent.lines === 0)
+    ? `no agent lines have had ${Math.min(...horizons)} days on ${branch} yet`
+    : null;
+
   return {
+    ...(barren ? { unmeasurable: barren } : {}),
     branch,
     head,
     reference,

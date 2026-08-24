@@ -14,6 +14,10 @@ const num = (n) => n.toLocaleString('en-US');
 
 const THIN = 2000;        // the pre-registered floor for reporting a repo's rate
 const CONCENTRATED = 0.5; // top-5 commits holding this much makes the pooled figure a few commits
+const SPREAD = 20;        // estimators this far apart support no conclusion, in pp
+
+// Math.sign(0) is 0, which reads as a disagreement against any nonzero value.
+const signsDiffer = (a, b) => a * b < 0;
 
 export function human(result, name) {
   const L = [];
@@ -24,7 +28,10 @@ export function human(result, name) {
     if (result.commits) L.push(`  ${num(result.commits.total)} commits scanned.`);
     // The reason decides what the reader should take away, so say the right thing
     // rather than one generic line that fits only the no-attribution case.
-    if (/no agent|squash/.test(result.unmeasurable)) {
+    if (/have had/.test(result.unmeasurable)) {
+      L.push('  The lines are there, they are just too young to have a keep rate. Come');
+      L.push('  back after the shortest horizon has passed.');
+    } else if (/no agent trailers|squash/.test(result.unmeasurable)) {
       L.push('  This is not a keep rate of 0%: the tool cannot see agent work that was');
       L.push('  committed without attribution it can act on.');
     } else if (/retains almost nothing/.test(result.unmeasurable)) {
@@ -46,7 +53,9 @@ export function human(result, name) {
   for (const c of cohorts) {
     const label = `  at ${c.days} days`.padEnd(23);
     if (c === headline) {
-      L.push(`${label}n = ${num(c.agent.lines)} AI lines / ${num(c.human.lines)} human lines`);
+      const thin = c.agent.lines > 0 && c.agent.lines < THIN;
+      L.push(`${label}n = ${num(c.agent.lines)} AI lines / ${num(c.human.lines)} human lines`
+        + (thin ? '   (low n — indicative only)' : ''));
       L.push('                       ' + 'AI'.padStart(6) + '   human');
       for (const state of ['kept', 'edited', 'gone']) {
         L.push(`    ${state.padEnd(19)}${pct(c.agent[state], c.agent.lines).padStart(6)}  ${pct(c.human[state], c.human.lines).padStart(6)}`);
@@ -61,9 +70,9 @@ export function human(result, name) {
         if (typical !== null) {
           L.push(`    gap, typical       ${(typical >= 0 ? '+' : '') + typical.toFixed(1)} pp`);
         }
-        if (typical !== null && Math.sign(pooled) !== Math.sign(typical)) {
-          L.push('    the two estimators disagree in sign — the pooled figure is a few large');
-          L.push('    commits, not a property of the code. Do not quote either one alone.');
+        if (typical !== null && (signsDiffer(pooled, typical) || Math.abs(pooled - typical) > SPREAD)) {
+          L.push('    the two estimators are too far apart to support a conclusion: the pooled');
+          L.push('    figure is a few large commits, not a property of the code.');
         }
         L.push(`    median line age    ${c.agent.medianAgeDays} d (AI)  vs ${c.human.medianAgeDays} d (human), line-weighted`);
         if (c.agent.newFileShare !== null && c.human.newFileShare !== null) {
@@ -113,6 +122,10 @@ function footer(result) {
     notes.push('  Squashed PRs that mix agent and human commits are excluded rather than');
     notes.push('  counted: GitHub puts the agent trailer on the whole diff and a clone cannot');
     notes.push('  say which lines were the agent\'s.');
+  }
+  if (result.cohorts?.every((c) => c.human.lines === 0)) {
+    notes.push('  No human lines arrived in the same window, so there is no baseline and no');
+    notes.push('  gap. The agent figures stand alone and cannot be read as a comparison.');
   }
   if (!result.ignoreRevsHonoured) {
     notes.push('  No .git-blame-ignore-revs at HEAD: a mass-reformat commit, if this repo has');
