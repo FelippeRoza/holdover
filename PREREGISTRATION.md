@@ -44,9 +44,13 @@ and including if the difference is not distinguishable from zero.
 ## Method, fixed
 
 - **Attribution.** The rules in `src/attribution.js` at the commit tagged
-  `panel-v1`. Trailer email domains and agent author identities, unioned. No
-  change to that file after the frame is committed; if a rule has to change, the
-  panel is re-run in full and both results are published.
+  `panel-v1`, which will be created when `panel/frame.txt` is. Trailer addresses
+  and agent author identities, unioned. A vendor domain counts only with a
+  tool-shaped local part: the first version of this file matched whole domains and
+  so counted hand-written commits by people at OpenAI, Anthropic, Cursor, Charm,
+  Continue and Aider as agent work. No change to that file after the frame is
+  committed; if a rule has to change, the panel is re-run in full and both results
+  are published.
 - **Clock.** Arrival on the default branch: a commit on the first-parent trunk
   arrives at its own committer date, any other commit arrives when the oldest
   trunk commit having it as an ancestor arrived. Author date is not used.
@@ -68,6 +72,11 @@ and including if the difference is not distinguishable from zero.
   under 100 commits and human cohorts over, so a per-class cap clamps only the
   baseline. A per-cohort cap is also invalid, because it is not monotone in the
   horizon. The number of commits clamped and the volume trimmed will be reported.
+- **Median and interquartile range** are the inverse-ECDF quantile, Hyndman-Fan
+  type 1: the smallest order statistic whose empirical CDF reaches the quantile. It
+  is not the default in R, NumPy or pandas, all of which use type 7, and on 14
+  repositories type 7 gives a visibly narrower interval. Naming the convention is
+  the point of fixing it here.
 - **Two estimators, both published, neither alone.** The pooled line-weighted
   share within a repository, and the median per-commit rate. They answer different
   questions and on the pilot repository they differ by 93 points: -4.8 pp pooled
@@ -75,13 +84,14 @@ and including if the difference is not distinguishable from zero.
   the cohort. A repository where the two estimators disagree in sign, or differ by
   more than 20 points, will be reported as supporting no conclusion in either
   direction.
-- **Size standardisation.** The paired difference will also be reported
-  standardised on commit-size strata (`floor(log2(added))`), since commit size
-  differs systematically between the classes and is the dominant confound in the
-  pooled figure.
+- **Size standardisation.** The paired difference is also reported standardised on
+  commit-size strata (`floor(log2(added))`), weighted by the lines in each stratum,
+  with strata only one class reaches dropped. Commit size differs systematically
+  between the classes and is the dominant confound in the pooled figure.
 - **New-file standardisation.** And standardised on whether a line sits in a file
   its own commit created, which on the pilot repository is 67% of agent lines
-  against 26% of human lines. An external audit of an earlier version found that
+  against 26% of human lines. `--json` exposes `keptInNewFiles` per commit so this
+  can be recomputed without rerunning the tool. An external audit of an earlier version found that
   this single covariate moved the gap from +10.0 pp to +0.6 pp, with humans ahead
   inside the new-file stratum. Both the crude and the standardised estimate will be
   published; if they disagree, the standardised one is the result.
@@ -89,9 +99,9 @@ and including if the difference is not distinguishable from zero.
   median and the interquartile range of the per-repository rate. No pooled
   line-weighted average across repositories will be published, because one
   bot-heavy repository would then determine the result.
-- **All three horizons are published for every repository.** On one pilot repo the
-  gap is +6.4 pp at 30 days, +3.2 pp at 90 and -5.8 pp at 180, on over 478,000
-  lines at the longest horizon. Reporting the 90-day figure alone would be choosing
+- **All three horizons are published for every repository.** On `openai/codex` the
+  gap has run +6.9 pp at 30 days, +3.2 pp at 90 and -5.7 pp at 180, on over 480,000
+  lines at the longest horizon; see [RESULTS.md](RESULTS.md) for the current run. Reporting the 90-day figure alone would be choosing
   the answer. The 90-day figure remains the pre-registered headline; the other two
   are reported beside it in every table.
 - **Reference point.** Cohorts are measured from the arrival date of the tip of
