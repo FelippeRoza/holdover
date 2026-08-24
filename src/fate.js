@@ -146,6 +146,10 @@ export async function commitFate(cwd, sha, files, survivingByPath, headPathFor, 
   }
 
   const tally = (orphans, hunks, path) => {
+    // A hunk can replace at most as many lines as it adds. With -U0 a deletion and
+    // an adjacent insertion are one hunk, so `adds > 0` alone scored 99 deleted
+    // lines as edited against a single added one.
+    const budget = new Map();
     for (const line of orphans) {
       const hunk = hunks ? coveringHunk(hunks, line) : null;
       // No hunk covers it: the line is unchanged between that commit and HEAD, so
@@ -156,7 +160,8 @@ export async function commitFate(cwd, sha, files, survivingByPath, headPathFor, 
         if (isNew(path)) out.keptInNewFiles++;
         continue;
       }
-      if (hunk.adds > 0) out.edited++;
+      const left = budget.get(hunk) ?? hunk.adds;
+      if (left > 0) { out.edited++; budget.set(hunk, left - 1); }
       else out.gone++;
     }
   };

@@ -366,3 +366,14 @@ test('the wholesale-replacement gate does not depend on the horizon list', async
     assert.match(r.unmeasurable ?? '', /retains almost nothing/, horizons.join(','));
   }
 });
+
+test('a hunk cannot replace more lines than it adds', async () => {
+  // With -U0 a deletion and an adjacent insertion are one hunk. Scoring every
+  // deleted line as edited let one added line rescue an arbitrarily large
+  // deletion, which is not what edited means.
+  const r = await measure(join(FX, 'bighunk'), { horizons: [1], winsor: 1 });
+  assert.equal(r.all.agent.lines, 100);
+  assert.equal(r.all.agent.kept, 1);
+  assert.equal(r.all.agent.edited, 1, 'one line added, so one line replaced');
+  assert.equal(r.all.agent.gone, 98);
+});

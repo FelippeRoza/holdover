@@ -169,4 +169,14 @@ lines 10 "$R/code.py"
 printf '\x89PNG\r\n\x1a\n' > "$R/demo.png"; head -c 40000 /dev/urandom >> "$R/demo.png"
 git -C "$R" add -A; at "$R" 2025-01-01T00:00:00 "agent adds code and a png" "" "$AGENT"
 
+
+
+# ---------------- one added line against a large deletion: replaced, or gone?
+new bighunk
+R="$ROOT/bighunk"
+lines 100 "$R/big.py"; git -C "$R" add -A
+at "$R" 2025-01-01T00:00:00 "agent writes big.py" "" "$AGENT"
+{ head -1 "$R/big.py"; echo "one replacement line"; } > "$R/big.py.tmp"
+mv "$R/big.py.tmp" "$R/big.py"; git -C "$R" add -A
+at "$R" 2025-03-01T00:00:00 "human replaces almost all of big.py"
 echo "fixtures built in $ROOT"
