@@ -30,6 +30,7 @@ const SPREAD = 20;       // estimators this far apart support no conclusion, in 
 const COMPOSITION = 0.15; // new-file share gap this wide means different work
 const DAY = 86400;
 const COVERAGE = 0.5;   // least share of lines a standardised gap may rest on
+const THIN_COMMITS = 2; // a stratum with this few commits on a side is one commit's opinion
 
 const slugs = (await readFile(join(HERE, 'repos.txt'), 'utf8'))
   .split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
@@ -86,13 +87,20 @@ for (const slug of slugs) {
   });
 }
 
-/** The 90-day cohort's own rows, winsorised the way the published rate was. */
+/**
+ * The cohort's own rows, picked and winsorised exactly as measure.js did. The
+ * lower bound matters most: without windowStart the human side reaches back to
+ * the repo's first commit, which is the age confound the window exists to close.
+ * It inflated graphiti's baseline from 15,938 lines to 145,041.
+ */
 function cohortRows(r, days) {
+  const c = r.cohorts.find((x) => x.days === days);
+  if (!c) return null;
   const cutoff = r.reference - days * DAY;
-  return winsorise(
-    r.commitRows.filter((x) => x.klass !== 'mixed' && x.arrival !== null && x.arrival <= cutoff),
-    r.settings?.cap ?? Infinity,
-  ).rows;
+  const rows = r.commitRows.filter((x) => x.klass !== 'mixed' && x.arrival !== null
+    && x.arrival <= cutoff
+    && (c.windowStart === null || c.windowStart === undefined || x.arrival >= c.windowStart));
+  return winsorise(rows, r.settings?.cap ?? Infinity).rows;
 }
 
 /**
@@ -107,27 +115,33 @@ function standardise(strata) {
   let weight = 0;
   let sum = 0;
   let dropped = 0;
+  let thin = 0;
   for (const { agent, human } of strata) {
     if (!agent[0] || !human[0]) { dropped += agent[0] + human[0]; continue; }
     const w = agent[0] + human[0];
     weight += w;
     sum += w * ((agent[1] / agent[0]) - (human[1] / human[0]));
+    if (Math.min(agent[2] ?? Infinity, human[2] ?? Infinity) <= THIN_COMMITS) thin += w;
   }
   if (!weight) return null;
   const coverage = weight / (weight + dropped);
-  return coverage < COVERAGE ? { gap: null, coverage } : { gap: (sum / weight) * 100, coverage };
+  const out = { coverage, thinShare: thin / weight };
+  return coverage < COVERAGE ? { ...out, gap: null } : { ...out, gap: (sum / weight) * 100 };
 }
 
 /** Held to commit-size strata, floor(log2(added)). */
 function sizeStandardised(r, days) {
+  const rows = cohortRows(r, days);
+  if (!rows) return null;
   const strata = new Map();
-  for (const row of cohortRows(r, days)) {
+  for (const row of rows) {
     if (!row.added) continue;
     const k = Math.floor(Math.log2(row.added));
     let cell = strata.get(k);
-    if (!cell) { cell = { agent: [0, 0], human: [0, 0] }; strata.set(k, cell); }
+    if (!cell) { cell = { agent: [0, 0, 0], human: [0, 0, 0] }; strata.set(k, cell); }
     cell[row.klass][0] += row.added;
     cell[row.klass][1] += row.kept;
+    cell[row.klass][2]++;
   }
   return standardise(strata.values());
 }
@@ -140,16 +154,18 @@ function sizeStandardised(r, days) {
  */
 function newFileStandardised(r, days) {
   const rows = cohortRows(r, days);
-  if (rows.some((x) => x.keptInNewFiles === undefined)) return null;
+  if (!rows || rows.some((x) => x.keptInNewFiles === undefined)) return null;
   const strata = [
-    { agent: [0, 0], human: [0, 0] },
-    { agent: [0, 0], human: [0, 0] },
+    { agent: [0, 0, 0], human: [0, 0, 0] },
+    { agent: [0, 0, 0], human: [0, 0, 0] },
   ];
   for (const row of rows) {
     strata[0][row.klass][0] += row.addedInNewFiles;
     strata[0][row.klass][1] += row.keptInNewFiles;
+    strata[0][row.klass][2] += row.addedInNewFiles ? 1 : 0;
     strata[1][row.klass][0] += row.added - row.addedInNewFiles;
     strata[1][row.klass][1] += row.kept - row.keptInNewFiles;
+    strata[1][row.klass][2] += row.added - row.addedInNewFiles ? 1 : 0;
   }
   return standardise(strata);
 }
@@ -184,9 +200,17 @@ function summarise(r) {
     } else if (std && std.coverage < 0.8) {
       flags.push(`${what} strata cover ${dec(std.coverage)} of the lines`);
     }
+    if (std?.gap !== null && std && std.thinShare > 0.5) {
+      flags.push(`${dec(std.thinShare)} of the ${what}-standardised weight is in strata with ${THIN_COMMITS} commits or fewer on a side`);
+    }
   }
-  if (sizeStd?.gap !== null && sizeStd && Math.abs(sizeStd.gap - pooled) > SPREAD) {
-    flags.push(`size-standardised gap is ${pp(sizeStd.gap)}, ${Math.abs(sizeStd.gap - pooled).toFixed(1)} pp off the pooled one`);
+  for (const [what, std] of [['size', sizeStd], ['new-file', newFileStd]]) {
+    if (std?.gap === null || std?.gap === undefined) continue;
+    if (std.gap * pooled < 0) {
+      flags.push(`${what}-standardised gap is ${pp(std.gap)}, the other way from the pooled one`);
+    } else if (Math.abs(std.gap - pooled) > SPREAD) {
+      flags.push(`${what}-standardised gap is ${pp(std.gap)}, ${Math.abs(std.gap - pooled).toFixed(1)} pp off the pooled one`);
+    }
   }
 
   return {
@@ -242,7 +266,7 @@ if (gaps.length) {
   const stds = scoring.map((r) => r.sizeStd?.gap).filter((v) => v !== undefined && v !== null);
   L.push(`- Median pooled gap at 90 days: **${pp(quantile(gaps, 0.5))}** (IQR ${bare(quantile(gaps, 0.25))} to ${pp(quantile(gaps, 0.75))}), over ${gaps.length} repos.`);
   const newStds = scoring.map((r) => r.newFileStd?.gap).filter((v) => v !== undefined && v !== null);
-  L.push(`- Median size-standardised gap: **${pp(quantile(stds, 0.5))}** (IQR ${bare(quantile(stds, 0.25))} to ${pp(quantile(stds, 0.75))}), over the ${stds.length} repos whose strata cover enough of the lines. The pre-registration says the standardised figures win where they disagree with the crude one.`);
+  L.push(`- Median size-standardised gap: **${pp(quantile(stds, 0.5))}** (IQR ${bare(quantile(stds, 0.25))} to ${pp(quantile(stds, 0.75))}), over ${stds.length} repos. The pre-registration says the standardised figures win where they disagree with the crude one, and here they do.`);
   if (newStds.length) {
     L.push(`- Median new-file-standardised gap: **${pp(quantile(newStds, 0.5))}** (IQR ${bare(quantile(newStds, 0.25))} to ${pp(quantile(newStds, 0.75))}), over ${newStds.length} repos.`);
   }
