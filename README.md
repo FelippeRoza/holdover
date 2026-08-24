@@ -129,15 +129,18 @@ attribution. See [the decomposition](METHODOLOGY.md#where-the-disagreeing-number
 Measured with the shipped defaults at the 90-day horizon, at the tips recorded in
 [RESULTS.md](RESULTS.md#provenance). This is the whole case for reporting the
 diagnostics rather than the number. All twenty repos are in
-[RESULTS.md](RESULTS.md), where the median pooled gap is +6.6 pp with an
-interquartile range of +0.4 to +14.9, and 7 of the 14 repos above the line floor
-support no conclusion because their two estimators disagree.
+[RESULTS.md](RESULTS.md), where the median pooled gap is +6.5 pp with an
+interquartile range of +0.4 to +14.9. Held to commit-size strata that becomes
++9.2 pp, and held to whether a line sits in a file its own commit created, which
+the pre-registration calls the deciding covariate, **+2.5 pp**. Six of the
+fourteen repos above the line floor support no conclusion at all, because their
+two estimators disagree.
 
 | repo | AI n | AI kept | human kept | pooled | typical | new-file share | read with |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `Aider-AI/aider` | 48,474 | 66.6% | 44.4% | **+22.2 pp** | +19.7 pp | 6% vs 11% | nothing tripped, and stable at every horizon. The cleanest result here |
 | `browser-use/browser-use` | 14,238 | 20.5% | 41.6% | **-21.1 pp** | -13.4 pp | 48% vs 37% | nothing tripped either, and it runs the other way |
-| `openai/codex` | 11,592 | 59.6% | 57.6% | +2.0 pp | -1.2 pp | 25% vs 32% | estimators disagree in sign, and the gap changes sign twice across the horizons |
+| `openai/codex` | 11,394 | 60.2% | 58.7% | +1.5 pp | -1.2 pp | 25% vs 32% | estimators disagree in sign, and the gap is negative at 30 days |
 | `getzep/graphiti` | 2,786 | 76.4% | 81.2% | -4.8 pp | -98.2 pp | 67% vs 26% | estimators 93 pp apart, 5 commits are 80% of the cohort, so no conclusion |
 | `OpenHands/OpenHands` | — | — | — | — | — | — | `unmeasurable`: the tree was replaced wholesale, so both classes retain nothing |
 
@@ -145,10 +148,10 @@ Read the *level* as well as the gap: 66.6%, 20.5%, 59.6%, 76.4%. A headline "AI 
 survives N% of the time" describes a repo, not agents. The two cleanest rows here
 point in opposite directions by more than 20 points each.
 
-**The gap is not stable in the horizon.** On codex it runs -5.3 pp at 30 days,
-+2.0 pp at 90 and -6.8 pp at 180. Aider's barely moves, 22.0 to 22.5. Whether a
-single-horizon claim holds is a property of the repo, not of the horizon, and you
-cannot tell which you have without printing all three.
+**The gap is not stable in the horizon.** On codex it runs -5.6 pp at 30 days,
++1.5 pp at 90 and +3.1 pp at 180, crossing zero between the first two. Aider's
+barely moves: 22.0, 22.2, 22.5. Whether one horizon speaks for a repo is a
+property of the repo, and you cannot tell which kind you have without all three.
 
 An earlier version of this tool reported `+0.0 pp` for OpenHands, from 0 of 427,394
 agent lines and 0 of 301,298 human lines. That is the failure mode this project

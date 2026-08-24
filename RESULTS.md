@@ -18,13 +18,13 @@ test the claim. Read them as twenty worked examples of what the diagnostics look
 ## Summary
 
 - 19 of 20 repos measurable, 14 above the pre-registered 2,000-line floor.
-- Median pooled gap at 90 days: **+6.6 pp** (IQR +0.4 to +14.9 pp), over 14 repos.
+- Median pooled gap at 90 days: **+6.5 pp** (IQR +0.4 to +14.9 pp), over 14 repos.
 - Median size-standardised gap: **+9.2 pp** (IQR -0.0 to +14.1 pp), over 14 repos. The pre-registration says the standardised figures win where they disagree with the crude one, and here they do.
-- Median new-file-standardised gap: **+2.8 pp** (IQR -1.0 to +17.7 pp), over 14 repos.
-- Median per-commit gap: **+9.4 pp** (IQR -0.7 to +20.4 pp). It is not the same answer.
+- Median new-file-standardised gap: **+2.5 pp** (IQR -1.0 to +17.7 pp), over 14 repos.
+- Median per-commit gap: **+9.4 pp** (IQR +5.2 to +20.4 pp). It is not the same answer.
 - Median kept share: agent 66.6%, human 55.0%.
 - Agent kept share below human: **3 of 14** repos.
-- Support no conclusion, the estimators disagreeing in sign or by more than 20 pp: **7 of 14**. Drop them and the median of the rest is +12.9 pp, which is why they are not dropped.
+- Support no conclusion, the estimators disagreeing in sign or by more than 20 pp: **6 of 14**. Drop them and the median of the rest is +10.4 pp, which is why they are not dropped.
 - New-file share more than 15 pp apart: **5 of 14** repos, where the two cohorts are not the same kind of work.
 - The tips these rows were measured at span **101 days**. Cohorts count back from
   each repo's own tip, so the rows cover different calendar windows and the median
@@ -38,11 +38,11 @@ Median and IQR are the inverse-ECDF quantile, Hyndman-Fan type 1.
 
 | repo | AI n | dropped as mixed | AI kept | human kept | pooled | size-std | new-file-std | typical | new-file share | top 5 | read with |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `openai/codex` | 11,592 | 157,399 | 59.6% | 57.6% | +2.0 pp | +0.7 pp | +2.8 pp | -1.2 pp | 25.3% vs 31.8% | 49.8% | estimators disagree in sign, 3.1 pp apart; size strata cover 74.8% of the lines; 52.4% of the size-standardised weight is in strata with 2 commits or fewer on a side |
-| `aaif-goose/goose` | 65,712 | 0 | 55.4% | 44.8% | +10.6 pp | +12.6 pp | +11.4 pp | +20.4 pp | 57.9% vs 47.9% | 25.1% | 32 commits have a committer date before their parent's |
+| `openai/codex` | 11,394 | 157,399 | 60.2% | 58.7% | +1.5 pp | -0.0 pp | +2.4 pp | +5.8 pp | 25.4% vs 31.7% | 50.6% | size strata cover 74.9% of the lines; 53.5% of the size-standardised weight is in strata with 2 commits or fewer on a side; size-standardised gap is -0.0 pp, the other way from the pooled one |
+| `aaif-goose/goose` | 65,712 | 0 | 55.4% | 45.0% | +10.4 pp | +12.3 pp | +11.1 pp | +20.4 pp | 57.9% vs 48.2% | 25.1% | 32 commits have a committer date before their parent's |
 | `OpenHands/OpenHands` | — | — | — | — | — | — | — | — | — | — | `unmeasurable`: the tree at this ref retains almost nothing from before the cohort — a wholesale replacement, not a survival rate |
 | `anomalyco/opencode` | 92,190 | 0 | 47.2% | 38.9% | +8.4 pp | +12.6 pp | +8.2 pp | -0.7 pp | 15.0% vs 34.1% | 14.5% | estimators disagree in sign, 9.0 pp apart; new-file share 19.1 pp apart |
-| `anthropics/claude-code` | 9,861 | 119 | 87.2% | 80.7% | +6.6 pp | -3.9 pp | +2.6 pp | -9.2 pp | 91.8% vs 40.6% | 66.5% | estimators disagree in sign, 15.7 pp apart; new-file share 51.2 pp apart; size strata cover 74.5% of the lines; size-standardised gap is -3.9 pp, the other way from the pooled one |
+| `anthropics/claude-code` | 9,861 | 119 | 87.2% | 80.7% | +6.5 pp | -3.9 pp | +2.5 pp | -9.2 pp | 91.8% vs 40.6% | 66.5% | estimators disagree in sign, 15.7 pp apart; new-file share 51.2 pp apart; size strata cover 74.5% of the lines; size-standardised gap is -3.9 pp, the other way from the pooled one |
 | `cline/cline` | 1,537 | 53,787 | 80.5% | 56.8% | +23.7 pp | — | +14.0 pp | +8.3 pp | 73.7% vs 46.9% | 90.4% | below the 2,000-line floor; new-file share 26.8 pp apart; size strata cover only 19.8% of the lines, so no standardised gap |
 | `RooCodeInc/Roo-Code` | 9,879 | 11,061 | 52.8% | 55.3% | -2.5 pp | +9.2 pp | -2.3 pp | +15.3 pp | 39.0% vs 40.1% | 81.1% | estimators disagree in sign, 17.8 pp apart; 96.1% of the size-standardised weight is in strata with 2 commits or fewer on a side; size-standardised gap is +9.2 pp, the other way from the pooled one |
 | `Aider-AI/aider` | 48,474 | 0 | 66.6% | 44.4% | +22.2 pp | +19.4 pp | +22.9 pp | +19.7 pp | 5.7% vs 10.9% | 3.0% | no threshold tripped |
@@ -79,10 +79,10 @@ The gap is not stable in the horizon, so a single-horizon claim is choosing its 
 
 | repo | 30 d AI / human | 90 d AI / human | 180 d AI / human |
 | --- | --- | --- | --- |
-| `openai/codex` | 59.8% / 65.0% | 59.6% / 57.6% | 40.0% / 46.8% (low n) |
-| `aaif-goose/goose` | 60.5% / 51.5% | 55.4% / 44.8% | 55.9% / 43.2% |
+| `openai/codex` | 60.4% / 66.1% | 60.2% / 58.7% | 51.5% / 48.4% (low n) |
+| `aaif-goose/goose` | 60.5% / 51.5% | 55.4% / 45.0% | 55.9% / 43.2% |
 | `anomalyco/opencode` | 56.3% / 45.4% | 47.2% / 38.9% | 50.4% / 27.5% |
-| `anthropics/claude-code` | 87.2% / 81.2% | 87.2% / 80.7% | 87.2% / 85.0% |
+| `anthropics/claude-code` | 87.2% / 81.2% | 87.2% / 80.7% | 87.2% / 85.1% |
 | `cline/cline` | 84.9% / 64.2% | 80.5% / 56.8% (low n) | — / — (low n) |
 | `RooCodeInc/Roo-Code` | 54.3% / 57.0% | 52.8% / 55.3% | 74.9% / 51.1% |
 | `Aider-AI/aider` | 66.8% / 44.8% | 66.6% / 44.4% | 66.4% / 43.8% |
@@ -111,9 +111,9 @@ reproduces the same number and re-measuring the repo later will not.
 
 | repo | tip | tip arrived | measured | tool |
 | --- | --- | --- | --- | --- |
-| `openai/codex` | [`4aa52f2cb2`](https://github.com/openai/codex/commit/4aa52f2cb2cdffa9c826f9e4e421a5435a05af06) | 2026-08-24 | 2026-08-24 | 0.1.0 |
-| `aaif-goose/goose` | [`9a4e043562`](https://github.com/aaif-goose/goose/commit/9a4e04356295a9e02356d13ff97f1278c82af79f) | 2026-08-24 | 2026-08-24 | 0.1.0 |
-| `OpenHands/OpenHands` | [`c146a9e75a`](https://github.com/OpenHands/OpenHands/commit/c146a9e75a9478e5dcf4eaecb9d7fc338433729f) | 2026-08-24 | 2026-08-24 | 0.1.0 |
+| `openai/codex` | [`b6333bb1bb`](https://github.com/openai/codex/commit/b6333bb1bb7d9dd7aa9c5c6a7b6936041bacc144) | 2026-08-24 | 2026-08-24 | 0.1.0 |
+| `aaif-goose/goose` | [`11269687a8`](https://github.com/aaif-goose/goose/commit/11269687a8e781b93078c90474bdcdad4d264178) | 2026-08-24 | 2026-08-24 | 0.1.0 |
+| `OpenHands/OpenHands` | [`c4c5bb7467`](https://github.com/OpenHands/OpenHands/commit/c4c5bb74679a9cdab8ea7e863ff491c79f9cdbc0) | 2026-08-24 | 2026-08-24 | 0.1.0 |
 | `anomalyco/opencode` | [`7cde8329bc`](https://github.com/anomalyco/opencode/commit/7cde8329bc33801248d6aafa2a4dd46dc86e5683) | 2026-08-24 | 2026-08-24 | 0.1.0 |
 | `anthropics/claude-code` | [`45bdfa96ca`](https://github.com/anthropics/claude-code/commit/45bdfa96ca415da92e62b6ca85a1d6e29adf3c44) | 2026-08-23 | 2026-08-24 | 0.1.0 |
 | `cline/cline` | [`09ee902639`](https://github.com/cline/cline/commit/09ee9026393e681a4834d8acbf4d9d5fdfa8664a) | 2026-08-23 | 2026-08-24 | 0.1.0 |
@@ -126,9 +126,9 @@ reproduces the same number and re-measuring the repo later will not.
 | `pydantic/pydantic-ai` | [`7373879dfa`](https://github.com/pydantic/pydantic-ai/commit/7373879dfa62003abbee458c9c49a251b7bc9d29) | 2026-08-24 | 2026-08-24 | 0.1.0 |
 | `stanfordnlp/dspy` | [`03641a2eeb`](https://github.com/stanfordnlp/dspy/commit/03641a2eeb53991a6b095561e146e19d0954edf1) | 2026-08-24 | 2026-08-24 | 0.1.0 |
 | `danny-avila/LibreChat` | [`9cee6f97cc`](https://github.com/danny-avila/LibreChat/commit/9cee6f97cc5a2e5c82408e51964721b9b95f29ae) | 2026-08-24 | 2026-08-24 | 0.1.0 |
-| `crewAIInc/crewAI` | [`2746bb88b7`](https://github.com/crewAIInc/crewAI/commit/2746bb88b7348a4d138a39c219dbc243169fbe24) | 2026-08-24 | 2026-08-24 | 0.1.0 |
+| `crewAIInc/crewAI` | [`d0e9208627`](https://github.com/crewAIInc/crewAI/commit/d0e92086272b7a1ffe40c092b2c769722765ce2e) | 2026-08-24 | 2026-08-24 | 0.1.0 |
 | `modelcontextprotocol/servers` | [`599dafc105`](https://github.com/modelcontextprotocol/servers/commit/599dafc1054550a6eeb87a6545c1e1b03b3ca827) | 2026-08-18 | 2026-08-24 | 0.1.0 |
-| `ghostty-org/ghostty` | [`c8554f28e0`](https://github.com/ghostty-org/ghostty/commit/c8554f28e0efe2f5595f32020371c34b25ec628f) | 2026-08-24 | 2026-08-24 | 0.1.0 |
-| `pola-rs/polars` | [`192d8e07bd`](https://github.com/pola-rs/polars/commit/192d8e07bdf50ce172cb9752ffb9af0197a93765) | 2026-08-24 | 2026-08-24 | 0.1.0 |
-| `supabase/supabase` | [`d5ee11bea0`](https://github.com/supabase/supabase/commit/d5ee11bea0cba0149d16715aabb088d03c10be36) | 2026-08-24 | 2026-08-24 | 0.1.0 |
+| `ghostty-org/ghostty` | [`13b9857a25`](https://github.com/ghostty-org/ghostty/commit/13b9857a25e7befc9ae95ecaf8f3563a13757350) | 2026-08-24 | 2026-08-24 | 0.1.0 |
+| `pola-rs/polars` | [`586512bdff`](https://github.com/pola-rs/polars/commit/586512bdfffaa36a68622bc076e3cf1bddb7caff) | 2026-08-24 | 2026-08-24 | 0.1.0 |
+| `supabase/supabase` | [`e616c6d267`](https://github.com/supabase/supabase/commit/e616c6d267e938487be793e3d6cb70190ff34eda) | 2026-08-24 | 2026-08-24 | 0.1.0 |
 | `getzep/graphiti` | [`993e081a6d`](https://github.com/getzep/graphiti/commit/993e081a6d7948a0d8851c12a5fbdbeb49fed862) | 2026-08-21 | 2026-08-24 | 0.1.0 |
