@@ -23,8 +23,11 @@
 // different tool using Anthropic's model. The email is the stable part.
 
 /**
- * Vendor domains that only ever belong to a coding agent, so any address at the
- * domain counts. Kept separate from EXACT_EMAILS because these are safe to widen.
+ * Vendor domains where a tool-shaped local part means an agent. The domain alone
+ * is not enough: these companies employ people, and matching the whole domain
+ * counted every hand-written commit by anyone at OpenAI, Anthropic, Cursor, Charm
+ * or Aider as agent work. openai/codex read 7,733 agent commits that way against
+ * the 360 an anchored trailer search finds.
  */
 const AGENT_DOMAINS = [
   'anthropic.com',      // Claude Code, and goose when it runs an Anthropic model
@@ -49,8 +52,22 @@ const AGENT_DOMAINS = [
 ];
 
 /**
- * Addresses whose domain is shared with humans, so the local part must match too.
- * google.com and bytedance.com have rather a lot of human employees.
+ * Local parts that name a tool rather than a person. Required at every domain
+ * above, so `noreply@anthropic.com` counts and `boris@anthropic.com` does not.
+ * Undercounts an agent configured with a personal-looking address, which is the
+ * safe direction: a missed agent line lowers a rate that is already a floor,
+ * while a human line counted as agent is the error this tool exists to correct.
+ */
+const AGENT_LOCALPART = new RegExp(
+  '^(?:no-?reply|agent|bot|assistant|ai|devin|cascade|codex|claude|crush|amp|droid'
+  + '|kiro|tabnine|continue|opencode|lovable|bolt|v0|jules|cursor|windsurf|replit'
+  + '|factory|charlie|openhands|aider|swe-agent)'
+  + '(?:agent|bot|assistant)?(?:[+._-]|$)',
+);
+
+/**
+ * Addresses whose domain is not the vendor's own, so the local part must match in
+ * full. google.com and bytedance.com have rather a lot of human employees.
  */
 const EXACT_EMAILS = [
   'jules@google.com',
@@ -159,9 +176,9 @@ function emailIsAgent(email) {
   const at = addr.lastIndexOf('@');
   if (at < 0) return false;
   const domain = addr.slice(at + 1);
-  if (AGENT_DOMAINS.includes(domain)) return true;
+  const local = addr.slice(0, at);
+  if (AGENT_DOMAINS.includes(domain)) return AGENT_LOCALPART.test(local);
   if (domain === 'users.noreply.github.com') {
-    const local = addr.slice(0, at);
     const plus = local.indexOf('+');
     const slug = (plus < 0 ? local : local.slice(plus + 1));
     return AGENT_GH_SLUGS.some((s) => s.toLowerCase() === slug);

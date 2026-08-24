@@ -164,6 +164,14 @@ Two signals, unioned: a trailer line whose **email** names an agent, and an agen
 in the commit's own **author** field. The full list is
 [`src/attribution.js`](src/attribution.js), which is meant to be read.
 
+Matching the vendor's domain does not work either. Every one of these companies
+employs people who commit from that domain, and a whole-domain rule counted their
+hand-written commits as agent work: `openai/codex` read 7,733 agent commits that way
+against the 360 an anchored trailer search finds. The domain now counts only with a
+tool-shaped local part, so `noreply@anthropic.com` is an agent and
+`boris@anthropic.com` is not. An agent configured with a personal-looking address is
+missed, which is the safe direction.
+
 Matching the display name does not work. Sixteen distinct names pair with
 `noreply@anthropic.com` across a six-repo sample: `Claude`, `Claude Sonnet 5`,
 `Claude Opus 4.8 (1M context)`, and `goose`, which is a different tool running an
@@ -174,9 +182,9 @@ codex. Anchored to a trailer line, the same word flags 360, all real.
 The author field is not optional. Aider's two attribution modes are mutually
 exclusive by design, so across its own 13,138-commit history the trailer and the
 author suffix never co-occur: trailer-only detection sees 67 commits, author-only
-sees 3,661. Cursor, Windsurf, Jules, Devin, Replit, Lovable, v0 and Bolt all commit
-as themselves and write no agent trailer. Replit writes `Replit-Commit-Author:
-Agent` instead. Crush defaults to `Assisted-by:`, the Linux kernel convention,
+sees 3,661. Cursor, Windsurf, Jules, Devin, Replit and v0 write a trailer and also
+commit under an agent identity, so both signals are needed; Replit writes
+`Replit-Commit-Author: Agent` as well. Crush defaults to `Assisted-by:`, the Linux kernel convention,
 which curl has used to credit *humans* since 2013, across roughly 280 commits, none
 of them naming a tool. The kernel adopted the same trailer for AI use in late 2025.
 Same string, opposite meanings, so `Assisted-by:` only counts here when its value

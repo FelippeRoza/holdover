@@ -124,3 +124,28 @@ test('a trailer not in the last paragraph still counts', () => {
     + 'Co-authored-by: Codex <noreply@openai.com>\n';
   assert.equal(agent(bulleted), 'agent');
 });
+
+test('a vendor employee is not an agent', () => {
+  // A whole-domain rule counted every hand-written commit by anyone at these
+  // companies as agent work, which is the error this tool exists to correct.
+  for (const who of [
+    'Jane Doe <jane@openai.com>',
+    'Boris <boris@anthropic.com>',
+    'Michael <michael@cursor.com>',
+    'Paul <paul@aider.chat>',
+    'Christian <christian@charm.land>',
+    'Amjad <amjad@replit.com>',
+  ]) {
+    assert.equal(classify('fix: adjust the retry backoff', who), 'human', who);
+  }
+});
+
+test('a tool-shaped address at a vendor domain is an agent', () => {
+  for (const addr of [
+    'noreply@anthropic.com', 'noreply@openai.com', 'cursoragent@cursor.com',
+    'cascade@windsurf.ai', 'agent@replit.com', 'openhands@all-hands.dev',
+  ]) {
+    assert.equal(classify(`feat: x\n\nCo-authored-by: Tool <${addr}>`, 'A <a@corp.dev>'),
+      'agent', addr);
+  }
+});
