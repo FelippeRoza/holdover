@@ -15,6 +15,7 @@
 import { execFile } from 'node:child_process';
 import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { gzipSync, gunzipSync } from 'node:zlib';
+import { winsorise } from '../src/measure.js';
 import { promisify } from 'node:util';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -27,6 +28,7 @@ const PILOT = 'getzep/graphiti';
 const FLOOR = 2000;      // pre-registered inclusion floor, agent lines at 90 days
 const SPREAD = 20;       // estimators this far apart support no conclusion, in pp
 const COMPOSITION = 0.15; // new-file share gap this wide means different work
+const DAY = 86400;
 
 const slugs = (await readFile(join(HERE, 'repos.txt'), 'utf8'))
   .split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
@@ -82,6 +84,44 @@ for (const slug of slugs) {
   });
 }
 
+/**
+ * Paired difference held to commit-size strata, floor(log2(added)), which the
+ * pre-registration asks for because commit size differs systematically between
+ * the classes. Strata where one class has no lines carry no comparison and are
+ * dropped, so the weight they held is reported too.
+ */
+function sizeStandardised(r, days) {
+  const c = r.cohorts.find((x) => x.days === days);
+  if (!c) return null;
+  const cutoff = r.reference - days * DAY;
+  const rows = winsorise(
+    r.commitRows.filter((x) => x.klass !== 'mixed' && x.arrival !== null && x.arrival <= cutoff),
+    r.settings?.cap ?? Infinity,
+  ).rows;
+
+  const strata = new Map();
+  for (const row of rows) {
+    if (!row.added) continue;
+    const k = Math.floor(Math.log2(row.added));
+    let cell = strata.get(k);
+    if (!cell) { cell = { agent: [0, 0], human: [0, 0] }; strata.set(k, cell); }
+    cell[row.klass][0] += row.added;
+    cell[row.klass][1] += row.kept;
+  }
+
+  let weight = 0;
+  let sum = 0;
+  let dropped = 0;
+  for (const { agent, human } of strata.values()) {
+    if (!agent[0] || !human[0]) { dropped += agent[0] + human[0]; continue; }
+    const w = agent[0] + human[0];
+    weight += w;
+    sum += w * ((agent[1] / agent[0]) - (human[1] / human[0]));
+  }
+  if (!weight) return null;
+  return { gap: (sum / weight) * 100, droppedShare: dropped / (weight + dropped) };
+}
+
 function summarise(r) {
   if (r.unmeasurable) return { unmeasurable: r.unmeasurable };
   const at = (d) => r.cohorts.find((c) => c.days === d);
@@ -104,8 +144,13 @@ function summarise(r) {
     flags.push(`new-file share ${(composition * 100).toFixed(1)} pp apart`);
   }
 
+  const sizeStd = sizeStandardised(r, 90);
+  if (sizeStd && Math.abs(sizeStd.gap - pooled) > SPREAD) {
+    flags.push(`size-standardised gap is ${pp(sizeStd.gap)} pp, ${Math.abs(sizeStd.gap - pooled).toFixed(1)} pp off the pooled one`);
+  }
+
   return {
-    c, pooled, typical, composition, flags,
+    c, pooled, typical, composition, flags, sizeStd,
     mixed: r.all?.mixed?.lines ?? 0,
     horizons: r.cohorts.map((h) => ({ days: h.days, ai: pct(h.agent.kept, h.agent.lines), human: pct(h.human.kept, h.human.lines), n: h.agent.lines })),
   };
@@ -154,7 +199,9 @@ if (gaps.length) {
   const refs = rows.map((r) => r.reference).filter(Boolean).sort((a, b) => a - b);
   const typicals = scoring.map((r) => r.typical).filter((v) => v !== null);
   L.push(`- ${measured.length} of ${eligible} repos measurable, ${scoring.length} above the pre-registered 2,000-line floor.`);
+  const stds = scoring.map((r) => r.sizeStd?.gap).filter((v) => v !== undefined && v !== null);
   L.push(`- Median pooled gap at 90 days: **${pp(quantile(gaps, 0.5))} pp** (IQR ${pp(quantile(gaps, 0.25))} to ${pp(quantile(gaps, 0.75))}).`);
+  L.push(`- Median size-standardised gap: **${pp(quantile(stds, 0.5))} pp** (IQR ${pp(quantile(stds, 0.25))} to ${pp(quantile(stds, 0.75))}). The pre-registration says this one wins where they disagree.`);
   L.push(`- Median per-commit gap: **${pp(quantile(typicals, 0.5))} pp** (IQR ${pp(quantile(typicals, 0.25))} to ${pp(quantile(typicals, 0.75))}). It is not the same answer.`);
   const keptShares = (side) => scoring.map((r) => (r.c[side].kept / r.c[side].lines) * 100);
   L.push(`- Median kept share: agent ${quantile(keptShares('agent'), 0.5).toFixed(1)}%, human ${quantile(keptShares('human'), 0.5).toFixed(1)}%.`);
@@ -177,17 +224,17 @@ if (gaps.length) {
 L.push('');
 L.push('## At 90 days');
 L.push('');
-L.push('| repo | AI n | dropped as mixed | AI kept | human kept | pooled | typical | new-file share | top 5 | read with |');
-L.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+L.push('| repo | AI n | dropped as mixed | AI kept | human kept | pooled | size-std | typical | new-file share | top 5 | read with |');
+L.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
 for (const r of rows) {
   const tag = r.slug === PILOT ? `\`${r.slug}\` *(pilot)*` : `\`${r.slug}\``;
-  if (r.absent) { L.push(`| ${tag} |${' — |'.repeat(8)} not measured: no output in \`panel/json\` |`); continue; }
-  if (r.unmeasurable) { L.push(`| ${tag} |${' — |'.repeat(8)} \`unmeasurable\`: ${r.unmeasurable} |`); continue; }
+  if (r.absent) { L.push(`| ${tag} |${' — |'.repeat(9)} not measured: no output in \`panel/json\` |`); continue; }
+  if (r.unmeasurable) { L.push(`| ${tag} |${' — |'.repeat(9)} \`unmeasurable\`: ${r.unmeasurable} |`); continue; }
   const c = r.c;
   const notes = [...r.flags];
   if (r.dateViolations) notes.push(`${num(r.dateViolations)} commits have a committer date before their parent's`);
   L.push(`| ${tag} | ${num(c.agent.lines)} | ${num(r.mixed)} | ${pct(c.agent.kept, c.agent.lines)} | ${pct(c.human.kept, c.human.lines)} `
-    + `| ${pp(r.pooled)} pp | ${pp(r.typical)} pp | ${dec(c.agent.newFileShare)} vs ${dec(c.human.newFileShare)} `
+    + `| ${pp(r.pooled)} pp | ${pp(r.sizeStd?.gap ?? null)} pp | ${pp(r.typical)} pp | ${dec(c.agent.newFileShare)} vs ${dec(c.human.newFileShare)} `
     + `| ${dec(c.agent.top5Share)} | ${notes.length ? notes.join('; ') : 'no threshold tripped'} |`);
 }
 L.push('');
@@ -196,7 +243,11 @@ L.push('the same difference between the median per-commit rates. A row where the
 L.push('sign is a row where a few large commits carry the pooled figure. `dropped as mixed` is');
 L.push('the agent-attributed lines excluded because they sit on multi-commit squashes, which is');
 L.push('often larger than the measured cohort. `top 5` is the share of the agent cohort held by');
-L.push('its five largest commits. `no threshold tripped` means exactly that, not agreement.');
+L.push('its five largest commits. `size-std` is the same pooled difference held to');
+L.push('commit-size strata, `floor(log2(added))`, weighted by the lines in each stratum;');
+L.push('commit size differs systematically between the classes and is the dominant');
+L.push('confound in the crude figure. `no threshold tripped` means exactly that, not');
+L.push('agreement.');
 L.push('');
 L.push('## Every horizon');
 L.push('');
