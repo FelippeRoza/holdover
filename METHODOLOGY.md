@@ -4,6 +4,22 @@ How the comparison is built, what each choice in it is worth, and what it still
 cannot do. [README.md](README.md) is the tool; this is the argument for trusting
 its output.
 
+## What the pilot figure did during development
+
+graphiti's measured gap moved four times, every time because a bug was fixed or a
+confound was controlled:
+
+| measured gap | after fixing |
+| --- | --- |
+| +32.7 pp | nothing, the first working version |
+| +13.6 pp | age matching: the human baseline was years of older code |
+| +0.7 pp | a shared winsorisation cap (a per-class p99 is a no-op below 100 commits, so it only ever clamped the baseline) and excluding mixed-authorship squashes |
+| **-4.8 pp** | counting a re-added identical line as kept rather than edited, and making blame whitespace-insensitive on both sides |
+
+Those are the steps in the order they were found, not an attribution of variance.
+The corrections interact, and the last two were applied together. Two of them came
+from adversarial review of the finished tool rather than from testing it.
+
 ## The baseline is the point
 
 A keep rate on its own is uninterpretable. 67% sounds bad until you find the humans
@@ -55,30 +71,15 @@ The first is the complement of the 53.9% modification rate in
 comment in `survival.py`, which its own author rejected; see
 [PRIOR-ART.md](PRIOR-ART.md). The third is quoted second-hand and this project has
 not traced it to a source, which is itself the problem.
-`holdover --decompose` walks from the strictest published definition to this one,
-one change at a time, so each choice is a number:
 
-```
-$ npx holdover getzep/graphiti --decompose
+`holdover --decompose` walks from the strictest of those definitions to this one, one
+change at a time, so each choice is a number. The ladder is in
+[README.md](README.md#most-of-the-ai-written-code-in-these-measurements-is-human);
+what follows is how to read it.
 
-  definition                                             AI n    kept   +edit   human n    kept  gap
-  strictest published definition                       57,629   83.9%   96.7%   198,089   60.0%  +24.0
-  + drop lockfiles, bundles and binaries               45,279   91.9%   96.2%   147,126   76.1%  +15.7
-  + take CI bots out of the human baseline             45,279   91.9%   96.2%   146,508   76.0%  +15.8
-  + follow content across files (-C)                   45,279   92.1%   96.3%   146,508   77.1%  +15.0
-  + honour .git-blame-ignore-revs                      45,279   92.1%   96.3%   146,508   77.1%  +15.0
-  + stop crediting the agent with whole squashed PRs    3,259   75.9%   81.4%   146,508   77.1%   -1.1
-  + cohort by arrival on the default branch (90 days)    2,786   76.4%   82.0%   145,041   76.9%   -0.4
-  + hold both sides to the same arrival window          2,786   76.4%   82.0%    15,938   83.8%   -7.3
-  + winsorise per-commit volume at p99                  2,786   76.4%   82.0%    13,452   81.2%   -4.8
-```
-
-Read down the `AI n` column. Squash attribution is the single largest effect in the
-table, and it is the one no published tool corrects for: it takes the cohort from
-45,279 lines to 3,259 and flips the sign of the gap from +15.0 to -1.1. If you take
-one thing from this project, it is that a headline "AI code survival rate" computed
-from `Co-authored-by` trailers on a squash-merging repo is mostly measuring human
-pull requests.
+Squash attribution is the single largest effect in it, and the one no published tool
+corrects for: it takes the cohort from 45,279 lines to 3,259 and flips the sign of
+the gap from +15.0 to -1.1.
 
 Age matching is the next largest, worth 6.9 points, and lockfiles and binaries are
 worth 8 points on the agent side. `-C` is worth almost nothing here once

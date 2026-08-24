@@ -1,11 +1,58 @@
 # holdover
 
+[![CI](https://github.com/FelippeRoza/holdover/actions/workflows/ci.yml/badge.svg)](https://github.com/FelippeRoza/holdover/actions/workflows/ci.yml)
+
 How much of what a coding agent wrote is still in your repo, and how that compares
 to the humans working on the same repo, plus the checks that tell you when the
 comparison is not worth making.
 
 Reads git history. Nothing to install in the repo being measured, no hooks, no
 daemon, no prior instrumentation, and it works on repos you do not own.
+
+```bash
+npx holdover                 # this repo
+npx holdover getzep/graphiti # any public one
+```
+
+Node 20+ and git. No dependencies.
+
+## Most of the "AI-written" code in these measurements is human
+
+GitHub's squash merge copies every co-author trailer onto the squashed commit. One
+agent commit inside a five-commit pull request therefore puts an agent trailer on a
+diff that is mostly somebody else's, and every git-history tool that reads trailers
+credits the agent with all of it.
+
+On the repo this tool was built against, that was **87% of the apparent agent
+lines**. `--decompose` walks from the strictest published definition to this one,
+one choice at a time, so each is a number:
+
+```
+$ npx holdover getzep/graphiti --decompose
+
+  definition                                             AI n    kept   +edit   human n    kept  gap
+  strictest published definition                       57,629   83.9%   96.7%   198,089   60.0%  +24.0
+  + drop lockfiles, bundles and binaries               45,279   91.9%   96.2%   147,126   76.1%  +15.7
+  + take CI bots out of the human baseline             45,279   91.9%   96.2%   146,508   76.0%  +15.8
+  + follow content across files (-C)                   45,279   92.1%   96.3%   146,508   77.1%  +15.0
+  + honour .git-blame-ignore-revs                      45,279   92.1%   96.3%   146,508   77.1%  +15.0
+  + stop crediting the agent with whole squashed PRs    3,259   75.9%   81.4%   146,508   77.1%   -1.1
+  + cohort by arrival on the default branch (90 days)    2,786   76.4%   82.0%   145,041   76.9%   -0.4
+  + hold both sides to the same arrival window          2,786   76.4%   82.0%    15,938   83.8%   -7.3
+  + winsorise per-commit volume at p99                  2,786   76.4%   82.0%    13,452   81.2%   -4.8
+```
+
+Read down the `AI n` column. The squash row takes the cohort from 45,279 lines to
+3,259 and flips the sign of the gap. It is the largest effect in the table and no
+other tool in [PRIOR-ART.md](PRIOR-ART.md) corrects for it. A headline "AI code
+survival rate" computed from `Co-authored-by` trailers on a squash-merging repo is
+mostly measuring human pull requests.
+
+The ladder is sequential and step 0 is a strawman assembled from three papers, not a
+re-run of anyone's pipeline. [METHODOLOGY.md](METHODOLOGY.md) says what that does and
+does not license you to conclude.
+
+## The default report
 
 ```
 $ npx holdover getzep/graphiti
@@ -39,31 +86,12 @@ That output is the point, and the warnings under it are not decoration. The
 interesting version of this tool is not the one that prints a big number; it is the
 one that tells you the big number was an artifact.
 
-This repo is where the tool was built, so it is the worked example rather than
-evidence. Its measured figure moved four times during development, every time
-because a bug was fixed or a confound was controlled:
-
-| measured gap | after fixing |
-| --- | --- |
-| +32.7 pp | nothing, the first working version |
-| +13.6 pp | age matching: the human baseline was years of older code |
-| +0.7 pp | a shared winsorisation cap (a per-class p99 is a no-op below 100 commits, so it only ever clamped the baseline) and excluding mixed-authorship squashes (87% of the "agent" lines were human pull requests carrying a hoisted trailer) |
-| **-4.8 pp** | counting a re-added identical line as kept rather than edited, and making blame whitespace-insensitive on both sides |
-
-Those are the steps in the order they were found, not an attribution of variance.
-The corrections interact, and the last two were applied together. Two of them came
-from adversarial review of the finished tool rather than from testing it.
-
-And even -4.8 pp is not a finding: the per-commit estimator says -98.2, the agent
-cohort is 67% new-file lines against the humans' 26%, and five commits are 80% of
-it. The honest report on graphiti is *no conclusion in either direction*. If your
-repo prints warnings like these, it is telling you the same thing.
-
-```bash
-npx holdover
-```
-
-Node 20+ and git. No dependencies.
+graphiti is the repo the tool was built against, so it is a worked example rather
+than evidence, and -4.8 pp is not a finding: the per-commit estimator says -98.2,
+the agent cohort is 67% new-file lines against the humans' 26%, and five commits are
+80% of it. The honest report here is *no conclusion in either direction*. That
+figure moved four times during development, every time because a bug was fixed or a
+confound was controlled; [METHODOLOGY.md](METHODOLOGY.md) has the steps.
 
 > The npm package `keeprate`, and the package `stillthere`, are unrelated
 > projects by other authors that measure something similar. Both are described
@@ -123,6 +151,14 @@ longer windows. Any single-horizon claim is choosing its answer.
 An earlier version of this tool reported `+0.0 pp` for OpenHands, from 0 of 427,394
 agent lines and 0 of 301,298 human lines. That is the failure mode this project
 exists to catch: a number that looks like parity and is actually an absence of data.
+
+## Measuring this repo
+
+`npx holdover` in a clone of holdover prints `unmeasurable`. Every line here was
+written by an agent and disclosed, there are no human commits to compare against,
+and the newest agent lines have not had 30 days on the branch yet. A tool whose
+argument is that an absence of data should not be printed as a number cannot make
+an exception for itself.
 
 ## Usage
 
