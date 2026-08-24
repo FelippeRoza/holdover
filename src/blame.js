@@ -25,6 +25,9 @@
 //        owned 16.3%. A fresh clone does not honour the file — git only reads it
 //        when asked, and says nothing when it is present and unused.
 
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { git, gitOrNull, mapLimit, CONCURRENCY } from './git.js';
 import { skipPath } from './added.js';
 
@@ -89,69 +92,82 @@ export async function textFilesAtHead(cwd, tip, skip = skipPath) {
  */
 export async function blameHead(cwd, files, tip, onProgress, flags) {
   const { args, ignoreRevs } = await blameArgs(cwd, { ...flags, tip });
-  const full = ignoreRevs ? [...args, `--ignore-revs-file=${IGNORE_REVS_FILE}`] : args;
+  // Read from the ref, not the worktree. A relative path here resolves on disk,
+  // so a stale or absent checkout made every blame exit 128 while the report
+  // still claimed the file was honoured.
+  let scratch = null;
+  let full = args;
+  if (ignoreRevs) {
+    scratch = await mkdtemp(join(tmpdir(), 'holdover-revs-'));
+    const path = join(scratch, IGNORE_REVS_FILE);
+    await writeFile(path, await git(cwd, ['show', `${tip}:${IGNORE_REVS_FILE}`]));
+    full = [...args, `--ignore-revs-file=${path}`];
+  }
+  try {
+    /** sha -> original path -> sorted inclusive [start, end] ranges of original lines */
+    /** @type {Map<string, Map<string, Array<[number, number]>>>} */
+    const surviving = new Map();
+    // originalPath -> headPath -> how many lines came that way. A path's move
+    // destination is a property of the path, not of any one commit, so this is
+    // collected once globally and resolved to the most common target.
+    /** @type {Map<string, Map<string, number>>} */
+    const moved = new Map();
+    const skipped = [];
+    let done = 0;
 
-  /** sha -> original path -> sorted inclusive [start, end] ranges of original lines */
-  /** @type {Map<string, Map<string, Array<[number, number]>>>} */
-  const surviving = new Map();
-  // originalPath -> headPath -> how many lines came that way. A path's move
-  // destination is a property of the path, not of any one commit, so this is
-  // collected once globally and resolved to the most common target.
-  /** @type {Map<string, Map<string, number>>} */
-  const moved = new Map();
-  const skipped = [];
-  let done = 0;
+    await mapLimit(files, CONCURRENCY, async (file) => {
+      const out = await gitOrNull(cwd, [...full, tip, '--', file]);
+      done++;
+      if (onProgress) onProgress(done, files.length);
+      if (out === null) { skipped.push(file); return; }
 
-  await mapLimit(files, CONCURRENCY, async (file) => {
-    const out = await gitOrNull(cwd, [...full, tip, '--', file]);
-    done++;
-    if (onProgress) onProgress(done, files.length);
-    if (out === null) { skipped.push(file); return; }
+      // --incremental: "<sha> <origLine> <finalLine> <numLines>" opens a group and
+      // "filename <path>" names the file those lines came from. Everything between
+      // is commit metadata this tool does not need.
+      let sha = null;
+      let origLine = 0;
+      let count = 0;
+      for (const line of out.split('\n')) {
+        const header = line.match(/^([0-9a-f]{40}) (\d+) (\d+) (\d+)$/);
+        if (header) {
+          sha = header[1];
+          origLine = Number(header[2]);
+          count = Number(header[4]);
+          continue;
+        }
+        if (!sha || !line.startsWith('filename ')) continue;
+        const path = line.slice('filename '.length);
 
-    // --incremental: "<sha> <origLine> <finalLine> <numLines>" opens a group and
-    // "filename <path>" names the file those lines came from. Everything between
-    // is commit metadata this tool does not need.
-    let sha = null;
-    let origLine = 0;
-    let count = 0;
-    for (const line of out.split('\n')) {
-      const header = line.match(/^([0-9a-f]{40}) (\d+) (\d+) (\d+)$/);
-      if (header) {
-        sha = header[1];
-        origLine = Number(header[2]);
-        count = Number(header[4]);
-        continue;
+        let byPath = surviving.get(sha);
+        if (!byPath) { byPath = new Map(); surviving.set(sha, byPath); }
+        let ranges = byPath.get(path);
+        if (!ranges) { ranges = []; byPath.set(path, ranges); }
+        ranges.push([origLine, origLine + count - 1]);
+
+        let targets = moved.get(path);
+        if (!targets) { targets = new Map(); moved.set(path, targets); }
+        targets.set(file, (targets.get(file) || 0) + count);
+        sha = null;
       }
-      if (!sha || !line.startsWith('filename ')) continue;
-      const path = line.slice('filename '.length);
+    });
 
-      let byPath = surviving.get(sha);
-      if (!byPath) { byPath = new Map(); surviving.set(sha, byPath); }
-      let ranges = byPath.get(path);
-      if (!ranges) { ranges = []; byPath.set(path, ranges); }
-      ranges.push([origLine, origLine + count - 1]);
-
-      let targets = moved.get(path);
-      if (!targets) { targets = new Map(); moved.set(path, targets); }
-      targets.set(file, (targets.get(file) || 0) + count);
-      sha = null;
+    // Sort each range list once, so membership is a binary search later.
+    for (const byPath of surviving.values()) {
+      for (const ranges of byPath.values()) ranges.sort((a, b) => a[0] - b[0]);
     }
-  });
 
-  // Sort each range list once, so membership is a binary search later.
-  for (const byPath of surviving.values()) {
-    for (const ranges of byPath.values()) ranges.sort((a, b) => a[0] - b[0]);
+    // Resolve each original path to the HEAD path most of its lines ended up in.
+    /** @type {Map<string, string>} */
+    const headPathFor = new Map();
+    for (const [orig, targets] of moved) {
+      let best = null;
+      let bestN = -1;
+      for (const [head, n] of targets) if (n > bestN) { best = head; bestN = n; }
+      headPathFor.set(orig, best);
+    }
+
+    return { surviving, headPathFor, skipped, ignoreRevs };
+  } finally {
+    if (scratch) await rm(scratch, { recursive: true, force: true });
   }
-
-  // Resolve each original path to the HEAD path most of its lines ended up in.
-  /** @type {Map<string, string>} */
-  const headPathFor = new Map();
-  for (const [orig, targets] of moved) {
-    let best = null;
-    let bestN = -1;
-    for (const [head, n] of targets) if (n > bestN) { best = head; bestN = n; }
-    headPathFor.set(orig, best);
-  }
-
-  return { surviving, headPathFor, skipped, ignoreRevs };
 }

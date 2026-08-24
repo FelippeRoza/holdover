@@ -30,7 +30,7 @@
 // things. This is why `kept` is "unchanged apart from whitespace" and not
 // "byte-identical".
 
-import { gitOrNull, mapLimit, CONCURRENCY } from './git.js';
+import { git, mapLimit, CONCURRENCY } from './git.js';
 
 /** Expand inclusive [start, end] ranges into line numbers. */
 function expand(ranges) {
@@ -112,6 +112,11 @@ function coveringHunk(hunks, line) {
  * diff — a tree diff narrowed by pathspec cannot see the rename target, so it
  * would report a moved file as wholly deleted and every line in it as gone.
  */
+const PATHSPEC_BATCH = 500;
+
+const chunk = (xs, n) => Array.from(
+  { length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
+
 export async function commitFate(cwd, sha, files, survivingByPath, headPathFor, headFiles, tip) {
   const out = { kept: 0, edited: 0, gone: 0, reattributed: 0 };
 
@@ -149,26 +154,23 @@ export async function commitFate(cwd, sha, files, survivingByPath, headPathFor, 
     }
   };
 
-  if (present.length) {
-    const diff = await gitOrNull(cwd, [
+  // Chunked because one pathspec per file blows past ARG_MAX on a commit that
+  // adds thousands of files, and a failed diff used to book every line as gone.
+  for (const batch of chunk(present, PATHSPEC_BATCH)) {
+    const diff = await git(cwd, [
       'diff', '-U0', '-w', '--no-color', '--no-textconv', '--no-renames',
-      sha, tip, '--', ...present.map((p) => p.path),
+      sha, tip, '--', ...batch.map((p) => p.path),
     ]);
-    if (diff === null) {
-      for (const p of present) out.gone += p.orphans.length;
-    } else {
-      const byPath = parseHunks(diff);
-      for (const p of present) tally(p.orphans, byPath.get(p.path) ?? []);
-    }
+    const byPath = parseHunks(diff);
+    for (const p of batch) tally(p.orphans, byPath.get(p.path) ?? []);
   }
 
   for (const m of moved) {
-    const diff = await gitOrNull(cwd, [
+    const diff = await git(cwd, [
       'diff', '-U0', '-w', '--no-color', '--no-textconv',
       `${sha}:${m.path}`, `${tip}:${m.successor}`,
     ]);
-    if (diff === null) out.gone += m.orphans.length;
-    else tally(m.orphans, parseHunks(diff, m.path).get(m.path) ?? []);
+    tally(m.orphans, parseHunks(diff, m.path).get(m.path) ?? []);
   }
 
   return out;
