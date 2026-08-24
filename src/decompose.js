@@ -1,6 +1,7 @@
 // Why the published numbers disagree.
 //
-// Three measurements of "does AI code survive" report roughly 46%, 47% and 82%.
+// Three circulating measurements of "does AI code survive" report roughly 46%, 47%
+// and 82%. See METHODOLOGY.md for where each comes from.
 // They are not measuring different repositories so much as different definitions.
 // This walks from the strictest definition in the literature to holdover's, one
 // change at a time, so the contribution of each choice is a number rather than an

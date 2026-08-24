@@ -49,7 +49,12 @@ be where the agent was pointed rather than how long its output lasts. The tool d
 
 ## Where the disagreeing numbers come from
 
-Three published measurements of AI code survival report roughly 54%, 47% and 82%.
+Three circulating measurements of AI code survival report roughly 46%, 47% and 82%.
+The first is the complement of the 53.9% modification rate in
+[Rahman & Shihab](https://arxiv.org/abs/2601.16809). The second is a figure in a
+comment in `survival.py`, which its own author rejected; see
+[PRIOR-ART.md](PRIOR-ART.md). The third is quoted second-hand and this project has
+not traced it to a source, which is itself the problem.
 `holdover --decompose` walks from the strictest published definition to this one,
 one change at a time, so each choice is a number:
 
@@ -118,7 +123,11 @@ Five passes, all `git`:
 ### Why those flags
 
 Every choice below was measured rather than assumed, on `pallets/flask` (5,556
-commits) and `django/django` (34,884 commits).
+commits) and `django/django` (34,884 commits). Those were one-off runs during
+development and the scripts are not in this repo, so read the figures as reported
+rather than reproducible. The same applies to the push-timestamp validation and the
+per-tool attribution counts further down. Everything in
+[RESULTS.md](RESULTS.md) is reproducible; these are not.
 
 - **`-C`, not `-M -C`.** `-C` implies `-M`. Path renames are followed with no flags
   at all; what `-M` adds is movement of a block within one file.

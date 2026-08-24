@@ -32,7 +32,7 @@ getzep/graphiti
     can be where the agent was pointed rather than how long its code lasts.
     concentrated: the 5 largest AI commits are 80.0% of that cohort
 
-  at 180 days          n = 1,925 lines    kept 69.1%   (human 79.3%)   (low n)
+  at 180 days          n = 1,925 lines    kept 69.1%   (human 79.3%)   (low n — indicative only)
 ```
 
 That output is the point, and the warnings under it are not decoration. The
