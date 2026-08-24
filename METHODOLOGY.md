@@ -177,8 +177,10 @@ author suffix never co-occur: trailer-only detection sees 67 commits, author-onl
 sees 3,661. Cursor, Windsurf, Jules, Devin, Replit, Lovable, v0 and Bolt all commit
 as themselves and write no agent trailer. Replit writes `Replit-Commit-Author:
 Agent` instead. Crush defaults to `Assisted-by:`, the Linux kernel convention,
-which curl has also used to credit *humans* since 2020, across 13,304 commits, so
-`Assisted-by:` only counts when its value has the `AGENT:MODEL` shape.
+which curl has used to credit *humans* since 2013, across roughly 280 commits, none
+of them naming a tool. The kernel adopted the same trailer for AI use in late 2025.
+Same string, opposite meanings, so `Assisted-by:` only counts here when its value
+has the `AGENT:MODEL` shape.
 
 ## Limitations
 

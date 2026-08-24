@@ -51,7 +51,7 @@ export async function addedLines(cwd, branch, wanted, skip = skipPath) {
   const onLine = (line) => {
     if (line.startsWith(REC)) {
       const sha = line.slice(REC.length).trim();
-      cur = wanted.has(sha) ? { added: 0, addedInNewFiles: 0, files: new Map() } : null;
+      cur = wanted.has(sha) ? { added: 0, addedInNewFiles: 0, newPaths: new Set(), files: new Map() } : null;
       if (cur) out.set(sha, cur);
       path = null;
       inHeader = false;
@@ -86,7 +86,7 @@ export async function addedLines(cwd, branch, wanted, skip = skipPath) {
     // real repo 73% of agent lines were in newly created files against 30% of human
     // lines, and standardising on that single covariate took the reported gap from
     // +10.0 pp to +0.6 pp.
-    if (isNew) cur.addedInNewFiles += count;
+    if (isNew) { cur.addedInNewFiles += count; cur.newPaths.add(path); }
     let ranges = cur.files.get(path);
     if (!ranges) { ranges = []; cur.files.set(path, ranges); }
     ranges.push([start, start + count - 1]);

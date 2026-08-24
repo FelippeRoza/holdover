@@ -343,3 +343,17 @@ test('winsorising keeps the three states summing to the clamped total', async ()
   assert.equal(r.added, 4);
   assert.equal(r.kept + r.edited + r.gone, 4);
 });
+
+test('kept lines are split by whether their file was new', async () => {
+  // The dominant confound: a line in a file its own commit created has nothing to
+  // rewrite it, so the split has to be available per commit, not just in aggregate.
+  const r = await measure(join(FX, 'editedgone'), { horizons: [1], winsor: 1 });
+  const agent = r.commitRows.filter((x) => x.klass === 'agent');
+  assert.ok(agent.length > 0);
+  for (const row of agent) {
+    assert.ok(row.keptInNewFiles <= row.kept);
+    assert.ok(row.keptInNewFiles <= row.addedInNewFiles);
+  }
+  // The agent commit created all three files, so every kept line is in a new one.
+  assert.equal(agent[0].keptInNewFiles, agent[0].kept);
+});

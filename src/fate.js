@@ -117,8 +117,9 @@ const PATHSPEC_BATCH = 500;
 const chunk = (xs, n) => Array.from(
   { length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
 
-export async function commitFate(cwd, sha, files, survivingByPath, headPathFor, headFiles, tip) {
-  const out = { kept: 0, edited: 0, gone: 0, reattributed: 0 };
+export async function commitFate(cwd, sha, files, survivingByPath, headPathFor, headFiles, tip, newPaths) {
+  const out = { kept: 0, edited: 0, gone: 0, reattributed: 0, keptInNewFiles: 0 };
+  const isNew = (path) => !!newPaths?.has(path);
 
   /** @type {Array<{path: string, orphans: number[]}>} */
   const present = [];
@@ -130,6 +131,7 @@ export async function commitFate(cwd, sha, files, survivingByPath, headPathFor, 
     const lines = expand(ranges);
     const orphans = survivors ? lines.filter((l) => !inRanges(survivors, l)) : lines;
     out.kept += lines.length - orphans.length;
+    if (isNew(path)) out.keptInNewFiles += lines.length - orphans.length;
     if (orphans.length === 0) continue;
 
     if (headFiles.has(path)) {
@@ -143,12 +145,17 @@ export async function commitFate(cwd, sha, files, survivingByPath, headPathFor, 
     else out.gone += orphans.length;
   }
 
-  const tally = (orphans, hunks) => {
+  const tally = (orphans, hunks, path) => {
     for (const line of orphans) {
       const hunk = hunks ? coveringHunk(hunks, line) : null;
       // No hunk covers it: the line is unchanged between that commit and HEAD, so
       // it is still there even though blame credits someone else.
-      if (!hunk) { out.kept++; out.reattributed++; continue; }
+      if (!hunk) {
+        out.kept++;
+        out.reattributed++;
+        if (isNew(path)) out.keptInNewFiles++;
+        continue;
+      }
       if (hunk.adds > 0) out.edited++;
       else out.gone++;
     }
@@ -162,7 +169,7 @@ export async function commitFate(cwd, sha, files, survivingByPath, headPathFor, 
       sha, tip, '--', ...batch.map((p) => p.path),
     ]);
     const byPath = parseHunks(diff);
-    for (const p of batch) tally(p.orphans, byPath.get(p.path) ?? []);
+    for (const p of batch) tally(p.orphans, byPath.get(p.path) ?? [], p.path);
   }
 
   for (const m of moved) {
@@ -170,7 +177,7 @@ export async function commitFate(cwd, sha, files, survivingByPath, headPathFor, 
       'diff', '-U0', '-w', '--no-color', '--no-textconv',
       `${sha}:${m.path}`, `${tip}:${m.successor}`,
     ]);
-    tally(m.orphans, parseHunks(diff, m.path).get(m.path) ?? []);
+    tally(m.orphans, parseHunks(diff, m.path).get(m.path) ?? [], m.path);
   }
 
   return out;
@@ -180,7 +187,7 @@ export async function fateForCommits(cwd, commits, surviving, headPathFor, headF
   let done = 0;
   return mapLimit([...commits.keys()], CONCURRENCY, async (sha) => {
     const entry = commits.get(sha);
-    const fate = await commitFate(cwd, sha, entry.files, surviving.get(sha), headPathFor, headFiles, tip);
+    const fate = await commitFate(cwd, sha, entry.files, surviving.get(sha), headPathFor, headFiles, tip, entry.newPaths);
     done++;
     if (onProgress) onProgress(done, commits.size);
     return { sha, ...fate, added: entry.added, addedInNewFiles: entry.addedInNewFiles };

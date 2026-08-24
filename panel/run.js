@@ -122,6 +122,42 @@ function sizeStandardised(r, days) {
   return { gap: (sum / weight) * 100, droppedShare: dropped / (weight + dropped) };
 }
 
+/**
+ * Same paired difference, held to whether a line sits in a file its own commit
+ * created. On the pilot repo that is 67% of agent lines against 26% of human
+ * ones, and an external audit found it moved a gap from +10.0 pp to +0.6 pp.
+ * Needs keptInNewFiles, so it is null for output from before that field existed.
+ */
+function newFileStandardised(r, days) {
+  const cutoff = r.reference - days * DAY;
+  const rows = winsorise(
+    r.commitRows.filter((x) => x.klass !== 'mixed' && x.arrival !== null && x.arrival <= cutoff),
+    r.settings?.cap ?? Infinity,
+  ).rows;
+  if (rows.some((x) => x.keptInNewFiles === undefined)) return null;
+
+  const cell = { agent: [[0, 0], [0, 0]], human: [[0, 0], [0, 0]] };
+  for (const row of rows) {
+    const c = cell[row.klass];
+    c[0][0] += row.addedInNewFiles;
+    c[0][1] += row.keptInNewFiles;
+    c[1][0] += row.added - row.addedInNewFiles;
+    c[1][1] += row.kept - row.keptInNewFiles;
+  }
+
+  let weight = 0;
+  let sum = 0;
+  for (let i = 0; i < 2; i++) {
+    const [aLines, aKept] = cell.agent[i];
+    const [hLines, hKept] = cell.human[i];
+    if (!aLines || !hLines) continue;
+    const w = aLines + hLines;
+    weight += w;
+    sum += w * ((aKept / aLines) - (hKept / hLines));
+  }
+  return weight ? (sum / weight) * 100 : null;
+}
+
 function summarise(r) {
   if (r.unmeasurable) return { unmeasurable: r.unmeasurable };
   const at = (d) => r.cohorts.find((c) => c.days === d);
@@ -145,12 +181,13 @@ function summarise(r) {
   }
 
   const sizeStd = sizeStandardised(r, 90);
+  const newFileStd = newFileStandardised(r, 90);
   if (sizeStd && Math.abs(sizeStd.gap - pooled) > SPREAD) {
     flags.push(`size-standardised gap is ${pp(sizeStd.gap)} pp, ${Math.abs(sizeStd.gap - pooled).toFixed(1)} pp off the pooled one`);
   }
 
   return {
-    c, pooled, typical, composition, flags, sizeStd,
+    c, pooled, typical, composition, flags, sizeStd, newFileStd,
     mixed: r.all?.mixed?.lines ?? 0,
     horizons: r.cohorts.map((h) => ({ days: h.days, ai: pct(h.agent.kept, h.agent.lines), human: pct(h.human.kept, h.human.lines), n: h.agent.lines })),
   };
@@ -201,7 +238,11 @@ if (gaps.length) {
   L.push(`- ${measured.length} of ${eligible} repos measurable, ${scoring.length} above the pre-registered 2,000-line floor.`);
   const stds = scoring.map((r) => r.sizeStd?.gap).filter((v) => v !== undefined && v !== null);
   L.push(`- Median pooled gap at 90 days: **${pp(quantile(gaps, 0.5))} pp** (IQR ${pp(quantile(gaps, 0.25))} to ${pp(quantile(gaps, 0.75))}).`);
-  L.push(`- Median size-standardised gap: **${pp(quantile(stds, 0.5))} pp** (IQR ${pp(quantile(stds, 0.25))} to ${pp(quantile(stds, 0.75))}). The pre-registration says this one wins where they disagree.`);
+  const newStds = scoring.map((r) => r.newFileStd).filter((v) => v !== undefined && v !== null);
+  L.push(`- Median size-standardised gap: **${pp(quantile(stds, 0.5))} pp** (IQR ${pp(quantile(stds, 0.25))} to ${pp(quantile(stds, 0.75))}). The pre-registration says the standardised figures win where they disagree with the crude one.`);
+  if (newStds.length) {
+    L.push(`- Median new-file-standardised gap: **${pp(quantile(newStds, 0.5))} pp** (IQR ${pp(quantile(newStds, 0.25))} to ${pp(quantile(newStds, 0.75))}).`);
+  }
   L.push(`- Median per-commit gap: **${pp(quantile(typicals, 0.5))} pp** (IQR ${pp(quantile(typicals, 0.25))} to ${pp(quantile(typicals, 0.75))}). It is not the same answer.`);
   const keptShares = (side) => scoring.map((r) => (r.c[side].kept / r.c[side].lines) * 100);
   L.push(`- Median kept share: agent ${quantile(keptShares('agent'), 0.5).toFixed(1)}%, human ${quantile(keptShares('human'), 0.5).toFixed(1)}%.`);
@@ -224,17 +265,17 @@ if (gaps.length) {
 L.push('');
 L.push('## At 90 days');
 L.push('');
-L.push('| repo | AI n | dropped as mixed | AI kept | human kept | pooled | size-std | typical | new-file share | top 5 | read with |');
-L.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+L.push('| repo | AI n | dropped as mixed | AI kept | human kept | pooled | size-std | new-file-std | typical | new-file share | top 5 | read with |');
+L.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
 for (const r of rows) {
   const tag = r.slug === PILOT ? `\`${r.slug}\` *(pilot)*` : `\`${r.slug}\``;
-  if (r.absent) { L.push(`| ${tag} |${' — |'.repeat(9)} not measured: no output in \`panel/json\` |`); continue; }
-  if (r.unmeasurable) { L.push(`| ${tag} |${' — |'.repeat(9)} \`unmeasurable\`: ${r.unmeasurable} |`); continue; }
+  if (r.absent) { L.push(`| ${tag} |${' — |'.repeat(10)} not measured: no output in \`panel/json\` |`); continue; }
+  if (r.unmeasurable) { L.push(`| ${tag} |${' — |'.repeat(10)} \`unmeasurable\`: ${r.unmeasurable} |`); continue; }
   const c = r.c;
   const notes = [...r.flags];
   if (r.dateViolations) notes.push(`${num(r.dateViolations)} commits have a committer date before their parent's`);
   L.push(`| ${tag} | ${num(c.agent.lines)} | ${num(r.mixed)} | ${pct(c.agent.kept, c.agent.lines)} | ${pct(c.human.kept, c.human.lines)} `
-    + `| ${pp(r.pooled)} pp | ${pp(r.sizeStd?.gap ?? null)} pp | ${pp(r.typical)} pp | ${dec(c.agent.newFileShare)} vs ${dec(c.human.newFileShare)} `
+    + `| ${pp(r.pooled)} pp | ${pp(r.sizeStd?.gap ?? null)} pp | ${pp(r.newFileStd)} pp | ${pp(r.typical)} pp | ${dec(c.agent.newFileShare)} vs ${dec(c.human.newFileShare)} `
     + `| ${dec(c.agent.top5Share)} | ${notes.length ? notes.join('; ') : 'no threshold tripped'} |`);
 }
 L.push('');
@@ -246,7 +287,8 @@ L.push('often larger than the measured cohort. `top 5` is the share of the agent
 L.push('its five largest commits. `size-std` is the same pooled difference held to');
 L.push('commit-size strata, `floor(log2(added))`, weighted by the lines in each stratum;');
 L.push('commit size differs systematically between the classes and is the dominant');
-L.push('confound in the crude figure. `no threshold tripped` means exactly that, not');
+L.push('confound in the crude figure. `new-file-std` does the same for whether a line sits');
+L.push('in a file its own commit created. `no threshold tripped` means exactly that, not');
 L.push('agreement.');
 L.push('');
 L.push('## Every horizon');
