@@ -115,8 +115,8 @@ that clear the line floor:
 Read the *level* as well as the gap: 56.3%, 55.3%, 76.4%. A headline "AI code survives
 N% of the time" describes a repo, not agents.
 
-**The gap is not stable in the horizon.** On codex it goes +6.4 pp at 30 days,
-+3.2 pp at 90, and **-5.8 pp at 180** (AI 43.2% against humans' 49.0%, on 478,344
+**The gap is not stable in the horizon.** On codex it goes +6.9 pp at 30 days,
++3.2 pp at 90, and **-5.7 pp at 180** (AI 43.3% against humans' 49.0%, on 483,382
 lines, not a thin-n artifact). Whatever advantage is there erodes and reverses over
 longer windows. Any single-horizon claim is choosing its answer.
 

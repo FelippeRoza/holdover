@@ -24,10 +24,10 @@ look 15 days apart when the lines were 150 days apart.
 questions and on real repos they disagree by tens of points. The pooled share is
 "how much of what was written survived", and it is dominated by the largest
 commits. The per-commit median is "what happens to a typical commit". On graphiti,
-27 of 54 agent commits keep *zero* lines, small fixes that were entirely rewritten, while
-five large commits holding 80% of the lines survive nearly intact. Pooled: 67.3%.
-Typical: 0%. Quoting either one alone is misleading, so the tool says so out loud
-when they disagree in sign.
+25 of 54 agent commits keep *zero* lines, small fixes that were entirely rewritten,
+while five large commits holding 80% of the lines survive nearly intact. Pooled:
+76.4%. Typical: 0%. Quoting either one alone is misleading, so the tool says so
+out loud when they disagree in sign.
 
 **Squashed pull requests.** GitHub credits every commit author in a PR as a
 co-author on the squash commit, so one agent-trailered commit in a five-commit PR
@@ -211,11 +211,12 @@ Stated plainly, because most of them cannot be fixed.
   graphiti, five commits are 80% of the agent cohort and two maintainers are 99% of
   it, and those same two supply half the human baseline. That is a within-person
   design presented as a between-group one. No interval is reported; a
-  commit-clustered one on 91 commits from 5 identities would likely include zero.
+  commit-clustered one on its 54 measured commits would likely include zero.
 - **Measurable repos are not a random sample.** Leaving attribution on is a
   per-invocation choice made by the person deciding whether the work is worth
   attributing, and the repos with the most agent history are the agent vendors'
-  own. Agent commit share across the four repos tested: 89%, 34%, 14%, 5%.
+  own. Agent commit share across the twenty repos in [RESULTS.md](RESULTS.md) has a
+  median of 5% and a range from 0.1% to 89%.
 - **Squashed PRs are dropped, not measured, and that can empty a repo.** A
   multi-commit squash carrying agent attribution is reported as `unattributable`.
   On a repo that squash-merges everything, this can leave nothing to measure, and
@@ -237,7 +238,7 @@ Stated plainly, because most of them cannot be fixed.
   count scales its kept/edited/gone split proportionally, which assumes the
   clamped part behaves like the counted part. It does not have to.
 - **Winsorising moves the number.** Clamping per-commit volume at p99 changes
-  graphiti's human baseline from 70.1% to 66.6% on its own. It is the right thing to
+  graphiti's 90-day human baseline from 83.8% to 81.2% on its own. It is the right thing to
   do and it is not free. `--winsor 1` disables it. The cap is one number per repo,
   computed from both classes pooled and applied to every horizon. An earlier
   per-class p99 was a no-op below 100 commits and so only ever clamped the
