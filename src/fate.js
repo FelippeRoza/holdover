@@ -22,7 +22,7 @@
 // elsewhere, because an intermediate commit deleted it and another re-added it, so
 // blame credits the re-adder. An earlier version called that `edited`, which was
 // indefensible: the line is right there, unchanged. It counts as `kept`, and the
-// count is reported separately as `reattributed` — 11.1% of one real repo's agent
+// count is reported separately as `reattributed`, 10.3% of one real repo's agent
 // cohort — so the choice is visible rather than buried.
 //
 // `-w` on both the blame and the diff, so a reindent does not read as a rewrite.

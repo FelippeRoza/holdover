@@ -29,6 +29,7 @@ const FLOOR = 2000;      // pre-registered inclusion floor, agent lines at 90 da
 const SPREAD = 20;       // estimators this far apart support no conclusion, in pp
 const COMPOSITION = 0.15; // new-file share gap this wide means different work
 const DAY = 86400;
+const COVERAGE = 0.5;   // least share of lines a standardised gap may rest on
 
 const slugs = (await readFile(join(HERE, 'repos.txt'), 'utf8'))
   .split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
@@ -62,8 +63,9 @@ const pct = (n, d) => (d ? ((n / d) * 100).toFixed(1) + '%' : '—');
 const pp = (v) => {
   if (v === null || v === undefined) return '—';
   const r = v.toFixed(1);
-  return (Number(r) > 0 ? '+' : '') + r;
+  return (Number(r) > 0 ? '+' : '') + r + ' pp';
 };
+const bare = (v) => pp(v).replace(' pp', '');
 const dec = (f) => (f === null || f === undefined ? '—' : (f * 100).toFixed(1) + '%');
 const num = (n) => n.toLocaleString('en-US');
 
@@ -119,7 +121,11 @@ function sizeStandardised(r, days) {
     sum += w * ((agent[1] / agent[0]) - (human[1] / human[0]));
   }
   if (!weight) return null;
-  return { gap: (sum / weight) * 100, droppedShare: dropped / (weight + dropped) };
+  const coverage = weight / (weight + dropped);
+  // Below half the lines the estimate describes a subset, not the repo. dspy's
+  // came out at +56.0 pp off 17% of its weight, which is the kind of number this
+  // project exists to refuse.
+  return coverage < COVERAGE ? { gap: null, coverage } : { gap: (sum / weight) * 100, coverage };
 }
 
 /**
@@ -182,7 +188,12 @@ function summarise(r) {
 
   const sizeStd = sizeStandardised(r, 90);
   const newFileStd = newFileStandardised(r, 90);
-  if (sizeStd && Math.abs(sizeStd.gap - pooled) > SPREAD) {
+  if (sizeStd && sizeStd.gap === null) {
+    flags.push(`size strata cover only ${dec(sizeStd.coverage)} of the lines, so no standardised gap`);
+  } else if (sizeStd && sizeStd.coverage < 0.8) {
+    flags.push(`size strata cover ${dec(sizeStd.coverage)} of the lines`);
+  }
+  if (sizeStd?.gap !== null && sizeStd && Math.abs(sizeStd.gap - pooled) > SPREAD) {
     flags.push(`size-standardised gap is ${pp(sizeStd.gap)} pp, ${Math.abs(sizeStd.gap - pooled).toFixed(1)} pp off the pooled one`);
   }
 
@@ -237,17 +248,17 @@ if (gaps.length) {
   const typicals = scoring.map((r) => r.typical).filter((v) => v !== null);
   L.push(`- ${measured.length} of ${eligible} repos measurable, ${scoring.length} above the pre-registered 2,000-line floor.`);
   const stds = scoring.map((r) => r.sizeStd?.gap).filter((v) => v !== undefined && v !== null);
-  L.push(`- Median pooled gap at 90 days: **${pp(quantile(gaps, 0.5))} pp** (IQR ${pp(quantile(gaps, 0.25))} to ${pp(quantile(gaps, 0.75))}).`);
+  L.push(`- Median pooled gap at 90 days: **${pp(quantile(gaps, 0.5))}** (IQR ${bare(quantile(gaps, 0.25))} to ${pp(quantile(gaps, 0.75))}), over ${gaps.length} repos.`);
   const newStds = scoring.map((r) => r.newFileStd).filter((v) => v !== undefined && v !== null);
-  L.push(`- Median size-standardised gap: **${pp(quantile(stds, 0.5))} pp** (IQR ${pp(quantile(stds, 0.25))} to ${pp(quantile(stds, 0.75))}). The pre-registration says the standardised figures win where they disagree with the crude one.`);
+  L.push(`- Median size-standardised gap: **${pp(quantile(stds, 0.5))}** (IQR ${bare(quantile(stds, 0.25))} to ${pp(quantile(stds, 0.75))}), over the ${stds.length} repos whose strata cover enough of the lines. The pre-registration says the standardised figures win where they disagree with the crude one.`);
   if (newStds.length) {
-    L.push(`- Median new-file-standardised gap: **${pp(quantile(newStds, 0.5))} pp** (IQR ${pp(quantile(newStds, 0.25))} to ${pp(quantile(newStds, 0.75))}).`);
+    L.push(`- Median new-file-standardised gap: **${pp(quantile(newStds, 0.5))}** (IQR ${bare(quantile(newStds, 0.25))} to ${pp(quantile(newStds, 0.75))}), over ${newStds.length} repos.`);
   }
-  L.push(`- Median per-commit gap: **${pp(quantile(typicals, 0.5))} pp** (IQR ${pp(quantile(typicals, 0.25))} to ${pp(quantile(typicals, 0.75))}). It is not the same answer.`);
+  L.push(`- Median per-commit gap: **${pp(quantile(typicals, 0.5))}** (IQR ${bare(quantile(typicals, 0.25))} to ${pp(quantile(typicals, 0.75))}). It is not the same answer.`);
   const keptShares = (side) => scoring.map((r) => (r.c[side].kept / r.c[side].lines) * 100);
   L.push(`- Median kept share: agent ${quantile(keptShares('agent'), 0.5).toFixed(1)}%, human ${quantile(keptShares('human'), 0.5).toFixed(1)}%.`);
   L.push(`- Agent kept share below human: **${scoring.filter((r) => r.pooled < 0).length} of ${scoring.length}** repos.`);
-  L.push(`- Support no conclusion, the estimators disagreeing in sign or by more than ${SPREAD} pp: **${voided.length} of ${scoring.length}**. Drop them and the median of the rest is ${pp(quantile(survivors, 0.5))} pp, which is why they are not dropped.`);
+  L.push(`- Support no conclusion, the estimators disagreeing in sign or by more than ${SPREAD} pp: **${voided.length} of ${scoring.length}**. Drop them and the median of the rest is ${pp(quantile(survivors, 0.5))}, which is why they are not dropped.`);
   L.push(`- New-file share more than ${COMPOSITION * 100} pp apart: **${scoring.filter((r) => r.composition > COMPOSITION).length} of ${scoring.length}** repos, where the two cohorts are not the same kind of work.`);
   if (refs.length > 1) {
     const spread = Math.round((refs.at(-1) - refs[0]) / 86400);
@@ -275,7 +286,7 @@ for (const r of rows) {
   const notes = [...r.flags];
   if (r.dateViolations) notes.push(`${num(r.dateViolations)} commits have a committer date before their parent's`);
   L.push(`| ${tag} | ${num(c.agent.lines)} | ${num(r.mixed)} | ${pct(c.agent.kept, c.agent.lines)} | ${pct(c.human.kept, c.human.lines)} `
-    + `| ${pp(r.pooled)} pp | ${pp(r.sizeStd?.gap ?? null)} pp | ${pp(r.newFileStd)} pp | ${pp(r.typical)} pp | ${dec(c.agent.newFileShare)} vs ${dec(c.human.newFileShare)} `
+    + `| ${pp(r.pooled)} | ${pp(r.sizeStd?.gap ?? null)} | ${pp(r.newFileStd)} | ${pp(r.typical)} | ${dec(c.agent.newFileShare)} vs ${dec(c.human.newFileShare)} `
     + `| ${dec(c.agent.top5Share)} | ${notes.length ? notes.join('; ') : 'no threshold tripped'} |`);
 }
 L.push('');
@@ -287,7 +298,8 @@ L.push('often larger than the measured cohort. `top 5` is the share of the agent
 L.push('its five largest commits. `size-std` is the same pooled difference held to');
 L.push('commit-size strata, `floor(log2(added))`, weighted by the lines in each stratum;');
 L.push('commit size differs systematically between the classes and is the dominant');
-L.push('confound in the crude figure. `new-file-std` does the same for whether a line sits');
+L.push('confound in the crude figure; it is blank where the strata both classes reach');
+L.push(`cover less than ${COVERAGE * 100}% of the lines. \`new-file-std\` does the same for whether a line sits`);
 L.push('in a file its own commit created. `no threshold tripped` means exactly that, not');
 L.push('agreement.');
 L.push('');

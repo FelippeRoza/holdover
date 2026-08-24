@@ -3,7 +3,7 @@
 // Every rule here is a string some tool writes about itself. Nothing is inferred
 // from code style, and nothing is inferred from the subject line — the subject is
 // where the false positives live. Matching `codex` anywhere in a message flags
-// 4,829 of the 9,637 commits in `openai/codex`, because the repo is named codex.
+// 4,829 of the 9,740 commits in `openai/codex`, because the repo is named codex.
 // Anchored to a trailer line, the same word flags 360, all of them real.
 //
 // Two independent signals, unioned:
@@ -227,7 +227,7 @@ export function classify(message, author) {
  * attribution claims all 100.
  *
  * On getzep/graphiti, 0 of 129 agent-attributed commits have an agent in the
- * author field and 68 are multi-commit squashes carrying 93% of the agent lines.
+ * author field and 68 are multi-commit squashes carrying 87% of the agent lines.
  * Treating those as agent-authored is the difference between a headline and a
  * fabrication, so they are reported as `mixed` and left out of both rates.
  *

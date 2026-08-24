@@ -138,8 +138,8 @@ function median(values) {
  *                     the quantity the tool is named for, and it is dominated by
  *                     the largest commits.
  *   `keptMedian`    — the keep rate of a typical commit, unweighted. On graphiti
- *                     the pooled agent figure is 80.0% and the per-commit median
- *                     is 48.8%, because five commits hold 69% of the lines.
+ *                     the pooled agent figure is 75.9% and the per-commit median
+ *                     is 50.4%, because five commits hold 68% of the lines.
  *
  * `top5Share` says how concentrated the cohort is, so the reader can see when the
  * pooled figure is really describing a handful of commits.
@@ -172,7 +172,7 @@ function tally(rows) {
  * Median age weighted by lines, not by commits. The unweighted version is the
  * wrong statistic for a claim about lines and it hid a real problem: on graphiti
  * the commit-unweighted medians were 282.5 and 298 days, 15 days apart, while the
- * line-weighted medians were 185.3 and 345.5 — nearly double the exposure on the
+ * line-weighted medians were 191.3 and 340.8, nearly double the exposure on the
  * human side, in a comparison whose whole purpose is to control for exposure.
  */
 function lineWeightedMedianAge(rows, reference) {

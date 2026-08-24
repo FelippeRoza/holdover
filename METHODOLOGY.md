@@ -40,9 +40,9 @@ look 15 days apart when the lines were 150 days apart.
 questions and on real repos they disagree by tens of points. The pooled share is
 "how much of what was written survived", and it is dominated by the largest
 commits. The per-commit median is "what happens to a typical commit". On graphiti,
-25 of 54 agent commits keep *zero* lines, small fixes that were entirely rewritten,
-while five large commits holding 80% of the lines survive nearly intact. Pooled:
-76.4%. Typical: 0%. Quoting either one alone is misleading, so the tool says so
+the per-commit median is 0%, so at least half its agent commits keep nothing, while
+five large commits holding 80% of the lines survive nearly intact. Pooled: 76.4%.
+Typical: 0%. Quoting either one alone is misleading, so the tool says so
 out loud when they disagree in sign.
 
 **Squashed pull requests.** GitHub credits every commit author in a PR as a
@@ -58,7 +58,8 @@ graphiti from 45,279 agent lines at 92.1% to 3,259 at 75.9%, and flips the gap f
 
 **What kind of code it is.** A line in a file its own commit created has nothing to
 be rewritten by. On graphiti 67% of agent lines are in new files against 26% of
-human lines, and on three of four repos tested the asymmetry runs the same way. The
+human lines. Across the twenty repos in [RESULTS.md](RESULTS.md) the asymmetry runs
+that way on 8 and the other way on 12, so it is not a rule. The
 report prints both shares and says so when they diverge, because most of a gap can
 be where the agent was pointed rather than how long its output lasts. The tool does
 **not** stratify on this. See [Limitations](#limitations).
@@ -176,7 +177,7 @@ Matching the display name does not work. Sixteen distinct names pair with
 `noreply@anthropic.com` across a six-repo sample: `Claude`, `Claude Sonnet 5`,
 `Claude Opus 4.8 (1M context)`, and `goose`, which is a different tool running an
 Anthropic model. Matching a keyword anywhere in the message is far worse: `codex`
-flags 4,829 of the 9,637 commits in `openai/codex`, because the repo is named
+flags 4,829 of the 9,740 commits in `openai/codex`, because the repo is named
 codex. Anchored to a trailer line, the same word flags 360, all real.
 
 The author field is not optional. Aider's two attribution modes are mutually
@@ -236,7 +237,7 @@ Stated plainly, because most of them cannot be fixed.
   per-invocation choice made by the person deciding whether the work is worth
   attributing, and the repos with the most agent history are the agent vendors'
   own. Agent commit share across the twenty repos in [RESULTS.md](RESULTS.md) has a
-  median of 5% and a range from 0.1% to 89%.
+  median of 3.1% and a range from 0.1% to 31%.
 - **Squashed PRs are dropped, not measured, and that can empty a repo.** A
   multi-commit squash carrying agent attribution is reported as `unattributable`.
   On a repo that squash-merges everything, this can leave nothing to measure, and
@@ -302,9 +303,9 @@ Stated plainly, because most of them cannot be fixed.
 - **Partial and shallow clones are refused**, not degraded. On a `blob:none` clone
   a single `git log --numstat` over 5,460 commits took 77 seconds because every
   diff is a network round trip.
-- **Performance is bounded by lines at HEAD, not commits.** graphiti (951 commits,
-  147k lines) takes 4.8 seconds. `openai/codex` (9,638 commits, 1.77M lines across
-  6,451 files) takes 228 seconds, of which 157 is blame. That is git-bound, not
+- **Performance is bounded by lines at HEAD, not commits.** graphiti, 950 commits,
+  takes 8 seconds. `openai/codex`, 9,740 commits, takes about 285, most of it blame.
+  `supabase/supabase` takes 12 minutes. That is git-bound, not
   fixable in this tool.
 - **This is one repo at a time.** Across repos the unit of analysis must be the
   repo, median and IQR, never a pooled line-weighted average, or one bot-heavy

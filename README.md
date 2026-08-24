@@ -31,15 +31,15 @@ one choice at a time, so each is a number:
 $ npx holdover getzep/graphiti --decompose
 
   definition                                             AI n    kept   +edit   human n    kept  gap
-  strictest published definition                       57,629   83.9%   96.7%   198,089   60.0%  +24.0
-  + drop lockfiles, bundles and binaries               45,279   91.9%   96.2%   147,126   76.1%  +15.7
-  + take CI bots out of the human baseline             45,279   91.9%   96.2%   146,508   76.0%  +15.8
-  + follow content across files (-C)                   45,279   92.1%   96.3%   146,508   77.1%  +15.0
-  + honour .git-blame-ignore-revs                      45,279   92.1%   96.3%   146,508   77.1%  +15.0
-  + stop crediting the agent with whole squashed PRs    3,259   75.9%   81.4%   146,508   77.1%   -1.1
-  + cohort by arrival on the default branch (90 days)    2,786   76.4%   82.0%   145,041   76.9%   -0.4
-  + hold both sides to the same arrival window          2,786   76.4%   82.0%    15,938   83.8%   -7.3
-  + winsorise per-commit volume at p99                  2,786   76.4%   82.0%    13,452   81.2%   -4.8
+  strictest published definition                       57,629   83.9%   95.2%   198,089   60.0%  +24.0
+  + drop lockfiles, bundles and binaries               45,279   91.9%   94.8%   147,126   76.1%  +15.7
+  + take CI bots out of the human baseline             45,279   91.9%   94.8%   146,508   76.0%  +15.8
+  + follow content across files (-C)                   45,279   92.1%   95.0%   146,508   77.1%  +15.0
+  + honour .git-blame-ignore-revs                      45,279   92.1%   95.0%   146,508   77.1%  +15.0
+  + stop crediting the agent with whole squashed PRs    3,259   75.9%   79.4%   146,508   77.1%   -1.1
+  + cohort by arrival on the default branch (90 days)    2,786   76.4%   79.9%   145,041   76.9%   -0.4
+  + hold both sides to the same arrival window          2,786   76.4%   79.9%    15,938   83.8%   -7.3
+  + winsorise per-commit volume at p99                  2,786   76.4%   79.9%    13,452   81.2%   -4.8
 ```
 
 Read down the `AI n` column. The squash row takes the cohort from 45,279 lines to
@@ -66,8 +66,8 @@ getzep/graphiti
   at 90 days           n = 2,786 AI lines / 13,452 human lines
                            AI   human
     kept                76.4%   81.2%
-    edited               5.6%   10.5%
-    gone                18.0%    8.3%
+    edited               3.5%    7.5%
+    gone                20.1%   11.3%
     kept, typical        0.0%   98.2%
 
     gap, pooled        -4.8 pp
@@ -110,7 +110,7 @@ default branch, in three states:
 
 Collapsing `edited` into `gone` means a one-character rename scores the same as
 deleting the file. On graphiti, 76.4% of attributable agent lines are unchanged and
-a further 5.6% were edited in place, so 18.0% are actually gone. A two-state
+a further 3.5% were edited in place, so 20.1% are actually gone. A two-state
 measurement reports that as "24% did not survive." It is not, however, the largest
 source of disagreement between the published numbers; that turns out to be squash
 attribution. See [the decomposition](METHODOLOGY.md#where-the-disagreeing-numbers-come-from).
@@ -124,29 +124,31 @@ attribution. See [the decomposition](METHODOLOGY.md#where-the-disagreeing-number
 - **Anything about a repo with no agent attribution.** That prints
   `unmeasurable`, not 0%.
 
-## Four repos, four different answers
+## Five repos, five different answers
 
 Measured with the shipped defaults at the 90-day horizon, at the tips recorded in
-[RESULTS.md](RESULTS.md#provenance). This is the whole case for
-reporting the diagnostics rather than the number. Twenty repos measured the same way
-are in [RESULTS.md](RESULTS.md), where the median gap is +3.0 pp with an interquartile
-range from -5.1 to +10.7, and the two estimators disagree in sign on 6 of the 14 repos
-that clear the line floor:
+[RESULTS.md](RESULTS.md#provenance). This is the whole case for reporting the
+diagnostics rather than the number. All twenty repos are in
+[RESULTS.md](RESULTS.md), where the median pooled gap is +6.6 pp with an
+interquartile range of +0.4 to +14.9, and 7 of the 14 repos above the line floor
+support no conclusion because their two estimators disagree.
 
-| repo | AI n | AI kept | human kept | pooled | typical | new-file share | verdict |
+| repo | AI n | AI kept | human kept | pooled | typical | new-file share | read with |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `openai/codex` | 1,186,546 | 56.3% | 53.0% | +3.2 pp | +20.7 pp | 34% vs 28% | both estimators agree, composition close, but see the horizon note below |
-| `aaif-goose/goose` | 66,090 | 55.3% | 44.6% | **+10.7 pp** | +20.4 pp | 58% vs 48% | both estimators agree, composition close, and the cleanest result here |
-| `getzep/graphiti` | 2,786 | 76.4% | 81.2% | -4.8 pp | -98.2 pp | 67% vs 26% | estimators 93 points apart, 5 commits are 80% of the cohort, so no conclusion |
+| `Aider-AI/aider` | 48,474 | 66.6% | 44.4% | **+22.2 pp** | +19.7 pp | 6% vs 11% | nothing tripped, and stable at every horizon. The cleanest result here |
+| `browser-use/browser-use` | 14,238 | 20.5% | 41.6% | **-21.1 pp** | -13.4 pp | 48% vs 37% | nothing tripped either, and it runs the other way |
+| `openai/codex` | 11,592 | 59.6% | 57.6% | +2.0 pp | -1.2 pp | 25% vs 32% | estimators disagree in sign, and the gap changes sign twice across the horizons |
+| `getzep/graphiti` | 2,786 | 76.4% | 81.2% | -4.8 pp | -98.2 pp | 67% vs 26% | estimators 93 pp apart, 5 commits are 80% of the cohort, so no conclusion |
 | `OpenHands/OpenHands` | — | — | — | — | — | — | `unmeasurable`: the tree was replaced wholesale, so both classes retain nothing |
 
-Read the *level* as well as the gap: 56.3%, 55.3%, 76.4%. A headline "AI code survives
-N% of the time" describes a repo, not agents.
+Read the *level* as well as the gap: 66.6%, 20.5%, 59.6%, 76.4%. A headline "AI code
+survives N% of the time" describes a repo, not agents. The two cleanest rows here
+point in opposite directions by more than 20 points each.
 
-**The gap is not stable in the horizon.** On codex it goes +6.9 pp at 30 days,
-+3.2 pp at 90, and **-5.7 pp at 180** (AI 43.3% against humans' 49.0%, on 483,382
-lines, not a thin-n artifact). Whatever advantage is there erodes and reverses over
-longer windows. Any single-horizon claim is choosing its answer.
+**The gap is not stable in the horizon.** On codex it runs -5.3 pp at 30 days,
++2.0 pp at 90 and -6.8 pp at 180. Aider's barely moves, 22.0 to 22.5. Whether a
+single-horizon claim holds is a property of the repo, not of the horizon, and you
+cannot tell which you have without printing all three.
 
 An earlier version of this tool reported `+0.0 pp` for OpenHands, from 0 of 427,394
 agent lines and 0 of 301,298 human lines. That is the failure mode this project
