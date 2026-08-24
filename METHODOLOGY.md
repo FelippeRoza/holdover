@@ -273,6 +273,26 @@ Stated plainly, because most of them cannot be fixed.
   arrived 800 days ago are both in the 90-day cohort with nine times the difference
   in exposure. A proper survival analysis would censor at the horizon; this does
   not.
+- **The arrival window is set by a single commit.** Age matching starts the window
+  at the oldest agent arrival, so one stray old agent-attributed commit, a backport,
+  a rebase that carried a trailer, a vendored import, reopens the whole age confound
+  the window exists to close. On a fixture, adding one ancient one-line agent commit
+  took the human baseline from 0 lines to 203 and produced a +73.9 pp gap out of
+  nothing. There is no trimming.
+- **A commit that is duplicated is counted twice.** A cherry-pick or a backport
+  present on the branch twice contributes both copies to the denominator, and if the
+  content is unchanged both copies score kept, so kept can exceed the number of
+  lines that exist at HEAD. Ordinary release-branch flows hit this. Nothing
+  deduplicates.
+- **A file moved into an excluded path reads as deleted.** The exclusions for
+  `dist/`, `vendor/`, `build/` and minified files are applied to the commit's own
+  paths when counting and to HEAD paths when blaming. A line added in `src/` and
+  later moved to `dist/` is therefore in the denominator and scored gone, rather
+  than being dropped from both sides.
+- **A tip dated in the future overstates every age.** Cohorts count back from the
+  tip's arrival, and a forward jump on the trunk is monotone, so the
+  backwards-date check cannot see it. The report says when the tip is dated after
+  today, which is the only case a clone can detect.
 - **A repo whose default branch was force-pushed or filter-branched has no
   trustworthy clock**, and nothing in a clone can detect that.
 - **Direct pushes to the default branch are dated by when the author committed

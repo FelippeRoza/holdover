@@ -144,6 +144,11 @@ function footer(result) {
     notes.push(`  Per-commit line counts clamped at ${num(result.settings.cap)} (p${(result.settings.winsor * 100).toFixed(0)} of all`);
     notes.push('  measured commits, one cap for both classes and every horizon).');
   }
+  if (w.tipInFuture) {
+    notes.push(`  The tip of ${result.branch} is dated ${new Date(w.tipInFuture * 1000).toISOString().slice(0, 10)},`);
+    notes.push('  which is in the future. Every cohort counts back from it, so every age here');
+    notes.push('  is overstated by however far the clock is out.');
+  }
   if (w.dateViolations) {
     notes.push(`  ${num(w.dateViolations)} commits on ${result.branch} have a committer date earlier than their`);
     notes.push('  parent\'s. Their arrival date is wrong and has been left uncorrected.');

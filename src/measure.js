@@ -304,7 +304,11 @@ export async function measure(startDir, opts = {}) {
   // frame, and the line-weighted median age of each side is reported so what is
   // left can be checked rather than trusted.
   const agentArrivals = byClass.agent.map((r) => r.arrival).filter((t) => t !== null);
-  const windowStart = matchAges && agentArrivals.length ? Math.min(...agentArrivals) : null;
+  // reduce, not Math.min(...): the spread overflows the call stack above about
+  // 100k arguments, which a repo with that many agent commits would reach.
+  const windowStart = matchAges && agentArrivals.length
+    ? agentArrivals.reduce((a, b) => (b < a ? b : a))
+    : null;
 
   // One cap for the repository, from both classes pooled, so it is symmetric and
   // so cohort totals stay monotone in the horizon.
@@ -419,6 +423,7 @@ export async function measure(startDir, opts = {}) {
       })),
     warnings: {
       dateViolations: violations.length,
+      tipInFuture: reference > Math.floor(Date.now() / 1000) + DAY ? reference : null,
       filesSkipped: blame.skipped.length,
       winsorPercentile: winsorAt,
       ignoredRevs: ignored.size,
