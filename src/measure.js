@@ -183,17 +183,22 @@ export async function measure(startDir, opts = {}) {
 
   const branch = opts.branch ?? await defaultBranch(cwd);
 
+  // Read the tip before anything can bail out: an unmeasurable verdict is still
+  // a verdict about one specific commit, and without the sha it cannot be
+  // rechecked or told apart from the same repo a month later.
+  const tipSha = (await git(cwd, ['rev-parse', branch])).trim();
+
   const defects = await cloneDefects(cwd);
   if (defects.length && !opts.allowPartial) {
     return {
       unmeasurable: `${defects.join(' and ')} — re-clone without --filter or --depth`,
       branch,
+      head: tipSha,
       commits: null,
     };
   }
 
   progress('reading history');
-  const tipSha = (await git(cwd, ['rev-parse', branch])).trim();
   const ignored = honourIgnoreRevs ? await ignoredRevs(cwd, tipSha) : new Set();
   const identities = await commitIdentities(cwd, branch, ignored, { includeBots, countSquashes });
   const agents = identities.filter((r) => r.klass === 'agent');
@@ -208,6 +213,7 @@ export async function measure(startDir, opts = {}) {
           + 'whose line-level authorship cannot be recovered from a clone'
         : 'no agent trailers or agent commit identities found',
       branch,
+      head: tipSha,
       commits: {
         total: identities.length, agent: 0, human: humans.length,
         mixed: mixed.length, excluded: excluded.length,
@@ -326,6 +332,8 @@ export async function measure(startDir, opts = {}) {
       unmeasurable: 'the tree at this ref retains almost nothing from before the '
         + 'cohort — a wholesale replacement, not a survival rate',
       branch,
+      head: tipSha,
+      reference,
       commits: {
         total: identities.length, agent: agents.length, human: humans.length,
         mixed: mixed.length, excluded: excluded.length,

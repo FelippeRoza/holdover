@@ -154,6 +154,9 @@ test('a wholesale tree replacement is unmeasurable, not a 0% tie', async () => {
   // That is an absence of data, not a finding of parity.
   const r = await measure(join(FX, 'replaced'), { horizons: [90], winsor: 1 });
   assert.match(r.unmeasurable, /retains almost nothing/);
+  // An unmeasurable verdict is still a verdict about one commit. Without the sha
+  // it cannot be rechecked, or told apart from the same repo measured later.
+  assert.match(r.head, /^[0-9a-f]{40}$/);
 });
 
 test('the new-file share of each cohort is reported', async () => {
@@ -170,6 +173,7 @@ test('a repo with no agent attribution is unmeasurable, not zero', async () => {
   const r = await run('notrailers');
   assert.match(r.unmeasurable, /no agent/);
   assert.equal(r.all, undefined);
+  assert.match(r.head, /^[0-9a-f]{40}$/);
 });
 
 test('every reported rate carries its own n', async () => {
