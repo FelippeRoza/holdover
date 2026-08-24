@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
+import { readFile } from 'node:fs/promises';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -24,6 +25,7 @@ const USAGE = `holdover — how much of an agent's output is still in the repo
   --branch <ref>               measure a ref other than the detected default
   --quiet                      no progress output
   --decompose                  show what each definitional choice is worth
+  --version                    print the version and exit
 `;
 
 const { values, positionals } = parseArgs({
@@ -36,11 +38,20 @@ const { values, positionals } = parseArgs({
     quiet: { type: 'boolean', default: false },
     decompose: { type: 'boolean', default: false },
     help: { type: 'boolean', short: 'h', default: false },
+    version: { type: 'boolean', default: false },
   },
 });
 
+const VERSION = JSON.parse(await readFile(
+  new URL('../package.json', import.meta.url), 'utf8')).version;
+
 if (values.help) {
   process.stdout.write(USAGE);
+  process.exit(0);
+}
+
+if (values.version) {
+  process.stdout.write(VERSION + '\n');
   process.exit(0);
 }
 
@@ -99,7 +110,9 @@ try {
       });
       if (!values.quiet && !values.json) process.stderr.write('\r\x1b[2K');
 
-      process.stdout.write((values.json ? json(result, name) : human(result, name)) + '\n');
+      process.stdout.write((values.json
+        ? json(result, name, { version: VERSION, measuredAt: new Date().toISOString() })
+        : human(result, name)) + '\n');
       process.exitCode = result.unmeasurable ? 3 : 0;
     }
   }

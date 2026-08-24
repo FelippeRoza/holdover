@@ -150,6 +150,6 @@ function footer(result) {
   return notes.join('\n');
 }
 
-export function json(result, name) {
-  return JSON.stringify({ repo: name, ...result }, null, 2);
+export function json(result, name, meta = {}) {
+  return JSON.stringify({ repo: name, ...meta, ...result }, null, 2);
 }
