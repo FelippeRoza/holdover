@@ -149,3 +149,17 @@ test('a tool-shaped address at a vendor domain is an agent', () => {
       'agent', addr);
   }
 });
+
+test('a tool name that is also a given name does not match', () => {
+  // The local-part rule is what keeps vendor employees out of the agent bucket,
+  // so any token in it that is also a first name puts them back.
+  for (const addr of [
+    'claude@anthropic.com', 'claude.dubois@anthropic.com', 'charlie@openai.com',
+    'jules@openai.com', 'ai@openai.com',
+  ]) {
+    assert.equal(classify('fix: adjust the retry backoff', `Someone <${addr}>`), 'human', addr);
+  }
+  // Jules at google.com is a full-address rule, not a local-part one.
+  assert.equal(
+    classify('feat: x\n\nCo-authored-by: Jules <jules@google.com>', 'A <a@corp.dev>'), 'agent');
+});

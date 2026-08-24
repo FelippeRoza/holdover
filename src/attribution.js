@@ -59,10 +59,15 @@ const AGENT_DOMAINS = [
  * while a human line counted as agent is the error this tool exists to correct.
  */
 const AGENT_LOCALPART = new RegExp(
-  '^(?:no-?reply|agent|bot|assistant|ai|devin|cascade|codex|claude|crush|amp|droid'
-  + '|kiro|tabnine|continue|opencode|lovable|bolt|v0|jules|cursor|windsurf|replit'
-  + '|factory|charlie|openhands|aider|swe-agent)'
-  + '(?:agent|bot|assistant)?(?:[+._-]|$)',
+  '^(?:no-?reply|noreply'
+  // Tool names, but not the ones that are also common given names: claude,
+  // charlie, jules and ai are all people, and matching them would put
+  // claude@anthropic.com back in the agent bucket.
+  + '|devin|codex|crush|droid|tabnine|opencode|lovable|windsurf|cascade|replit'
+  + '|openhands|aider|cursor|copilot|swe-agent|factory|continue|amp|bolt|kiro|v0'
+  + ')(?:agent|bot|assistant)?(?:[+._-]|$)'
+  // A bare role word, which no vendor gives to a person.
+  + '|^(?:agent|bot|assistant)(?:[+._-]|$)',
 );
 
 /**
