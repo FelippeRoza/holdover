@@ -195,6 +195,12 @@ has the `AGENT:MODEL` shape.
 
 Stated plainly, because most of them cannot be fixed.
 
+- **An agent this tool fails to recognise lands in the human baseline, not in
+  `excluded`.** The local-part rule is deliberately strict, so an agent committing
+  from an address that does not look like a tool, `ci@kiro.dev` or `git@aider.chat`,
+  is counted as a human. That is safe for the agent rate and not safe for the
+  baseline: it is the same contamination this project criticises in `stillthere`,
+  smaller only because the rule covers more tools.
 - **Every number is a floor on agent involvement, and the multiplier to the truth
   is unknown.** Trailer-and-identity detection has measured recall between 0% and
   92% depending purely on which tool a repo uses. Four holes: agent-written code a
