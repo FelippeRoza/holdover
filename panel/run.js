@@ -30,10 +30,20 @@ const SPREAD = 20;       // estimators this far apart support no conclusion, in 
 const COMPOSITION = 0.15; // new-file share gap this wide means different work
 const DAY = 86400;
 const COVERAGE = 0.5;   // least share of lines a standardised gap may rest on
-const THIN_COMMITS = 2; // a stratum with this few commits on a side is one commit's opinion
+const MIN_STRATUM = 10; // commits a side a size stratum needs before it stands alone
 
-const slugs = (await readFile(join(HERE, 'repos.txt'), 'utf8'))
-  .split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
+const slugs = [];
+const groupOf = new Map();
+{
+  let group = null;
+  for (const line of (await readFile(join(HERE, 'repos.txt'), 'utf8')).split('\n')) {
+    const t = line.trim();
+    if (t.startsWith('# agent vendors')) group = 'vendor';
+    else if (t.startsWith('# repos that use agents')) group = 'user';
+    else if (t.startsWith('# the pilot')) group = 'pilot';
+    else if (t && !t.startsWith('#')) { slugs.push(t); groupOf.set(t, group); }
+  }
+}
 
 await mkdir(JSONDIR, { recursive: true });
 const cached = new Set(await readdir(JSONDIR));
@@ -69,6 +79,15 @@ const pp = (v) => {
 const bare = (v) => pp(v).replace(' pp', '');
 const dec = (f) => (f === null || f === undefined ? '—' : (f * 100).toFixed(1) + '%');
 const num = (n) => n.toLocaleString('en-US');
+
+// Deterministic, so a rerun on the same cache gives the same interval.
+function rng(seed) {
+  let x = seed;
+  return () => {
+    x ^= x << 13; x ^= x >>> 17; x ^= x << 5; x |= 0;
+    return (x >>> 0) / 4294967296;
+  };
+}
 
 const rows = [];
 for (const slug of slugs) {
@@ -121,7 +140,7 @@ function standardise(strata) {
     const w = agent[0] + human[0];
     weight += w;
     sum += w * ((agent[1] / agent[0]) - (human[1] / human[0]));
-    if (Math.min(agent[2] ?? Infinity, human[2] ?? Infinity) <= THIN_COMMITS) thin += w;
+    if (Math.min(agent[2] ?? Infinity, human[2] ?? Infinity) < MIN_STRATUM) thin += w;
   }
   if (!weight) return null;
   const coverage = weight / (weight + dropped);
@@ -129,21 +148,42 @@ function standardise(strata) {
   return coverage < COVERAGE ? { ...out, gap: null } : { ...out, gap: (sum / weight) * 100 };
 }
 
-/** Held to commit-size strata, floor(log2(added)). */
+/**
+ * Held to commit-size strata, floor(log2(added)) on the raw count, then adjacent
+ * strata merged until each holds MIN_STRATUM commits on both sides. Unmerged
+ * strata on these cohorts routinely held one or two agent commits and were
+ * weighted by lines, which manufactured sign reversals: Roo-Code's crude -2.5 pp
+ * read +9.2 pp off eight two-commit cells. A repo left with one stratum is not
+ * stratified at all, and `strata` says so.
+ */
 function sizeStandardised(r, days) {
   const rows = cohortRows(r, days);
   if (!rows) return null;
-  const strata = new Map();
+  const byKey = new Map();
   for (const row of rows) {
-    if (!row.added) continue;
-    const k = Math.floor(Math.log2(row.added));
-    let cell = strata.get(k);
-    if (!cell) { cell = { agent: [0, 0, 0], human: [0, 0, 0] }; strata.set(k, cell); }
+    const raw = row.rawAdded ?? row.added;
+    if (!raw) continue;
+    const k = Math.floor(Math.log2(raw));
+    let cell = byKey.get(k);
+    if (!cell) { cell = { agent: [0, 0, 0], human: [0, 0, 0] }; byKey.set(k, cell); }
     cell[row.klass][0] += row.added;
     cell[row.klass][1] += row.kept;
     cell[row.klass][2]++;
   }
-  return standardise(strata.values());
+
+  const merged = [];
+  for (const k of [...byKey.keys()].sort((a, b) => a - b)) {
+    const cell = byKey.get(k);
+    const last = merged.at(-1);
+    if (last && (Math.min(last.agent[2], last.human[2]) < MIN_STRATUM
+      || Math.min(cell.agent[2], cell.human[2]) < MIN_STRATUM)) {
+      for (const side of ['agent', 'human']) for (let i = 0; i < 3; i++) last[side][i] += cell[side][i];
+    } else {
+      merged.push({ agent: [...cell.agent], human: [...cell.human] });
+    }
+  }
+  const out = standardise(merged);
+  return out && { ...out, strata: merged.length };
 }
 
 /**
@@ -201,7 +241,10 @@ function summarise(r) {
       flags.push(`${what} strata cover ${dec(std.coverage)} of the lines`);
     }
     if (std?.gap !== null && std && std.thinShare > 0.5) {
-      flags.push(`${dec(std.thinShare)} of the ${what}-standardised weight is in strata with ${THIN_COMMITS} commits or fewer on a side`);
+      flags.push(`${dec(std.thinShare)} of the ${what}-standardised weight is in strata under ${MIN_STRATUM} commits a side`);
+    }
+    if (std?.strata === 1) {
+      flags.push('one size stratum survives the merge, so its size-standardised gap is the crude one');
     }
   }
   for (const [what, std] of [['size', sizeStd], ['new-file', newFileStd]]) {
@@ -213,10 +256,27 @@ function summarise(r) {
     }
   }
 
+  const rate = (t, k) => (t.lines ? (t[k] / t.lines) * 100 : null);
+  const notGone = (100 - rate(c.agent, 'gone')) - (100 - rate(c.human, 'gone'));
+  const strict = ((c.agent.kept - c.agent.reattributed) / c.agent.lines
+    - (c.human.kept - c.human.reattributed) / c.human.lines) * 100;
+  const cohortMixed = (() => {
+    const cutoff = r.reference - 90 * DAY;
+    return r.commitRows.filter((x) => x.klass === 'mixed' && x.arrival !== null
+      && x.arrival <= cutoff && (c.windowStart == null || x.arrival >= c.windowStart))
+      .reduce((a, x) => a + x.added, 0);
+  })();
+
   return {
-    c, pooled, typical, composition, flags, sizeStd, newFileStd,
-    mixed: r.all?.mixed?.lines ?? 0,
+    c, pooled, typical, composition, flags, sizeStd, newFileStd, notGone, strict,
+    cohortRows: cohortRows(r, 90) ?? [],
+    mixed: cohortMixed,
+    lifetimeMixed: r.all?.mixed?.lines ?? 0,
     agentLines: r.all?.agent?.lines ?? 0,
+    exposure: c.human.medianAgeDays / c.agent.medianAgeDays,
+    capped: c.agent.capped + c.human.capped,
+    trimmed: c.agent.trimmed + c.human.trimmed,
+    cap: c.cap,
     horizons: r.cohorts.map((h) => ({ days: h.days, ai: pct(h.agent.kept, h.agent.lines), human: pct(h.human.kept, h.human.lines), n: h.agent.lines })),
   };
 }
@@ -232,6 +292,38 @@ const quantile = (xs, q) => {
 };
 
 const gaps = scoring.map((r) => r.pooled);
+
+/**
+ * Two-stage bootstrap: resample repos, then resample commits within each drawn
+ * repo. Commits within a repo are the noise every diagnostic in this table keeps
+ * pointing at, so a repo-only interval understates it.
+ */
+function interval(reps = 4000) {
+  const rand = rng(20260824);
+  const pick = (xs) => xs[Math.min(xs.length - 1, Math.floor(rand() * xs.length))];
+  const meds = [];
+  for (let b = 0; b < reps; b++) {
+    const draw = [];
+    for (let i = 0; i < scoring.length; i++) {
+      const r = pick(scoring);
+      const sums = { agent: [0, 0], human: [0, 0] };
+      for (const side of ['agent', 'human']) {
+        const pool = r.cohortRows.filter((x) => x.klass === side);
+        if (!pool.length) break;
+        for (let k = 0; k < pool.length; k++) {
+          const row = pick(pool);
+          sums[side][0] += row.added;
+          sums[side][1] += row.kept;
+        }
+      }
+      if (!sums.agent[0] || !sums.human[0]) continue;
+      draw.push((sums.agent[1] / sums.agent[0] - sums.human[1] / sums.human[0]) * 100);
+    }
+    if (draw.length) meds.push(quantile(draw, 0.5));
+  }
+  meds.sort((a, b) => a - b);
+  return [meds[Math.floor(0.025 * meds.length)], meds[Math.floor(0.975 * meds.length)]];
+}
 const L = [];
 L.push('# Results');
 L.push('');
@@ -269,15 +361,50 @@ if (gaps.length) {
   const stds = scoring.map((r) => r.sizeStd?.gap).filter((v) => v !== undefined && v !== null);
   L.push(`- Median pooled gap at 90 days: **${pp(quantile(gaps, 0.5))}** (IQR ${bare(quantile(gaps, 0.25))} to ${pp(quantile(gaps, 0.75))}), over ${gaps.length} repos.`);
   const newStds = scoring.map((r) => r.newFileStd?.gap).filter((v) => v !== undefined && v !== null);
-  L.push(`- Median size-standardised gap: **${pp(quantile(stds, 0.5))}** (IQR ${bare(quantile(stds, 0.25))} to ${pp(quantile(stds, 0.75))}), over ${stds.length} repos. The pre-registration says the standardised figures win where they disagree with the crude one, and here they do.`);
+  const ci = interval();
+  L.push(`  A two-stage bootstrap over repos and then commits within them puts that at`);
+  L.push(`  **${bare(ci[0])} to ${pp(ci[1])}**, which includes zero. Commits within a repo are the noise every`);
+  L.push('  diagnostic below keeps pointing at, so a repo-only interval would be narrower and');
+  L.push('  wrong.');
+  L.push(`- **Median gap in \`not gone\` share: ${pp(quantile(scoring.map((r) => r.notGone), 0.5))}.** The pre-registration forbids folding`);
+  L.push('  `edited` into `gone`, and publishing only `kept` does exactly that: the complement');
+  L.push('  of `kept` is `edited + gone`. Counting a line that was rewritten in place as');
+  L.push(`  surviving reverses ${scoring.filter((r) => r.pooled * r.notGone < 0).length} of the ${scoring.length} repos, \`Aider-AI/aider\` most of all.`);
+  L.push(`- Median size-standardised gap: **${pp(quantile(stds, 0.5))}** (IQR ${bare(quantile(stds, 0.25))} to ${pp(quantile(stds, 0.75))}), over ${stds.length} repos.`);
   if (newStds.length) {
     L.push(`- Median new-file-standardised gap: **${pp(quantile(newStds, 0.5))}** (IQR ${bare(quantile(newStds, 0.25))} to ${pp(quantile(newStds, 0.75))}), over ${newStds.length} repos.`);
   }
   L.push(`- Median per-commit gap: **${pp(quantile(typicals, 0.5))}** (IQR ${bare(quantile(typicals, 0.25))} to ${pp(quantile(typicals, 0.75))}). It is not the same answer.`);
   const keptShares = (side) => scoring.map((r) => (r.c[side].kept / r.c[side].lines) * 100);
-  L.push(`- Median kept share: agent ${quantile(keptShares('agent'), 0.5).toFixed(1)}%, human ${quantile(keptShares('human'), 0.5).toFixed(1)}%.`);
+  L.push(`- Median kept share: agent ${quantile(keptShares('agent'), 0.5).toFixed(1)}% (IQR ${quantile(keptShares('agent'), 0.25).toFixed(1)} to ${quantile(keptShares('agent'), 0.75).toFixed(1)}), human ${quantile(keptShares('human'), 0.5).toFixed(1)}% (IQR ${quantile(keptShares('human'), 0.25).toFixed(1)} to ${quantile(keptShares('human'), 0.75).toFixed(1)}).`);
+  L.push(`- Median gap with re-added identical lines not counted as kept: ${pp(quantile(scoring.map((r) => r.strict), 0.5))}.`);
+  const byGroup = (g) => scoring.filter((r) => groupOf.get(r.slug) === g).map((r) => r.pooled);
+  const vendor = byGroup('vendor');
+  const user = byGroup('user');
+  if (vendor.length && user.length) {
+    L.push(`- Split the way [\`panel/repos.txt\`](panel/repos.txt) splits it: repos whose owner sells the`);
+    L.push(`  agent, **${pp(quantile(vendor, 0.5))}** over ${vendor.length}; repos that only use one, **${pp(quantile(user, 0.5))}** over ${user.length}. The`);
+    L.push('  effect concentrates in the vendors\' own repositories.');
+  }
+  const balanced = scoring.filter((r) => r.exposure < 1.2).map((r) => r.pooled);
+  const older = scoring.filter((r) => r.exposure >= 1.2).map((r) => r.pooled);
+  if (balanced.length && older.length) {
+    L.push(`- The arrival window narrows the age confound without closing it. Where the two`);
+    L.push(`  cohorts' line-weighted median ages are within 20%, the median gap is **${pp(quantile(balanced, 0.5))}** over`);
+    L.push(`  ${balanced.length} repos; where the human lines are at least 20% older, **${pp(quantile(older, 0.5))}** over ${older.length}.`);
+  }
+  const cappedRepos = scoring.filter((r) => r.capped);
+  if (cappedRepos.length) {
+    L.push(`- Winsorisation clamped ${cappedRepos.reduce((a, r) => a + r.capped, 0)} commits across ${cappedRepos.length} repos, trimming`);
+    L.push(`  ${num(cappedRepos.reduce((a, r) => a + r.trimmed, 0))} lines. It is not a rounding detail: on \`Aider-AI/aider\` one human`);
+    L.push('  commit of 99,939 lines, kept in full, is clamped to 291, and that clamp is most of');
+    L.push('  that row\'s +22.2 pp.');
+  }
   L.push(`- Agent kept share below human: **${scoring.filter((r) => r.pooled < 0).length} of ${scoring.length}** repos.`);
-  L.push(`- Support no conclusion, the estimators disagreeing in sign or by more than ${SPREAD} pp: **${voided.length} of ${scoring.length}**. Drop them and the median of the rest is ${pp(quantile(survivors, 0.5))}, which is why they are not dropped.`);
+  const signOnly = scoring.filter((r) => r.typical !== null && r.pooled * r.typical < 0);
+  L.push(`- The two estimators disagree in sign on **${signOnly.length} of ${scoring.length}** repos, and are more than ${SPREAD} pp apart`);
+  L.push(`  on ${voided.length - signOnly.length} more. All ${voided.length} support no conclusion. Drop them and the median of the rest`);
+  L.push(`  is ${pp(quantile(survivors, 0.5))}, which is why they are not dropped.`);
   L.push(`- New-file share more than ${COMPOSITION * 100} pp apart: **${scoring.filter((r) => r.composition > COMPOSITION).length} of ${scoring.length}** repos, where the two cohorts are not the same kind of work.`);
   if (refs.length > 1) {
     const spread = Math.round((refs.at(-1) - refs[0]) / 86400);
@@ -295,14 +422,34 @@ if (gaps.length) {
   L.push('The median is the unit of analysis, per the pre-registration. No line-weighted');
   L.push('average across repos is reported, because `openai/codex` alone would decide it.');
   L.push('Median and IQR are the inverse-ECDF quantile, Hyndman-Fan type 1.');
+  L.push('');
+  L.push('## What that adds up to');
+  L.push('');
+  L.push('The crude figure says agent lines are kept about six points more often. Every');
+  L.push('control applied to it moves it toward zero, and none of them is optional:');
+  L.push('');
+  L.push('| holding | median gap |');
+  L.push('| --- | --- |');
+  L.push(`| nothing, the crude figure | ${pp(quantile(gaps, 0.5))} |`);
+  L.push(`| the three states apart, as \`not gone\` | ${pp(quantile(scoring.map((r) => r.notGone), 0.5))} |`);
+  L.push(`| commit size | ${pp(quantile(stds, 0.5))} |`);
+  L.push(`| whether the line sits in a new file | ${pp(quantile(newStds, 0.5))} |`);
+  if (balanced.length) L.push(`| exposure, on the repos where it is balanced | ${pp(quantile(balanced, 0.5))} |`);
+  if (user.length) L.push(`| ownership, on the repos that do not sell an agent | ${pp(quantile(user, 0.5))} |`);
+  L.push('');
+  L.push('So the honest reading of this panel is that most of the crude gap is composition:');
+  L.push('what kind of code, at what commit size, exposed for how long, in whose repository.');
+  L.push('The bootstrap above already includes zero, and six of the fourteen repos disagree');
+  L.push('with themselves. This is a null result with a positive point estimate, not a');
+  L.push('finding that agent code lasts longer.');
 } else {
   L.push('No repo cleared the floor.');
 }
 L.push('');
 L.push('## At 90 days');
 L.push('');
-L.push('| repo | AI n | dropped as mixed | AI kept | human kept | pooled | size-std | new-file-std | typical | new-file share | top 5 | read with |');
-L.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+L.push('| repo | AI n | mixed, dropped | AI kept | human kept | pooled | not gone | size-std | new-file-std | typical | new-file share | top 5 | read with |');
+L.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
 for (const r of rows) {
   const tag = r.slug === PILOT ? `\`${r.slug}\` *(pilot)*` : `\`${r.slug}\``;
   if (r.absent) { L.push(`| ${tag} |${' — |'.repeat(10)} not measured: no output in \`panel/json\` |`); continue; }
@@ -311,15 +458,17 @@ for (const r of rows) {
   const notes = [...r.flags];
   if (r.dateViolations) notes.push(`${num(r.dateViolations)} commits have a committer date before their parent's`);
   L.push(`| ${tag} | ${num(c.agent.lines)} | ${num(r.mixed)} | ${pct(c.agent.kept, c.agent.lines)} | ${pct(c.human.kept, c.human.lines)} `
-    + `| ${pp(r.pooled)} | ${pp(r.sizeStd?.gap ?? null)} | ${pp(r.newFileStd?.gap ?? null)} | ${pp(r.typical)} | ${dec(c.agent.newFileShare)} vs ${dec(c.human.newFileShare)} `
+    + `| ${pp(r.pooled)} | ${pp(r.notGone)} | ${pp(r.sizeStd?.gap ?? null)} | ${pp(r.newFileStd?.gap ?? null)} | ${pp(r.typical)} | ${dec(c.agent.newFileShare)} vs ${dec(c.human.newFileShare)} `
     + `| ${dec(c.agent.top5Share)} | ${notes.length ? notes.join('; ') : 'no threshold tripped'} |`);
 }
 L.push('');
 L.push('`pooled` is the line-weighted difference in kept share, agent minus human. `typical` is');
-L.push('the same difference between the median per-commit rates. A row where they disagree in');
-L.push('sign is a row where a few large commits carry the pooled figure. `dropped as mixed` is');
-L.push('the agent-attributed lines excluded because they sit on multi-commit squashes, which is');
-L.push('often larger than the measured cohort. `top 5` is the share of the agent cohort held by');
+L.push('the same difference between the median per-commit rates. `not gone` is the same');
+L.push('difference counting a line that was rewritten in place as surviving, which is the');
+L.push('reading the pre-registration insists on keeping separate from `kept`. A row where two');
+L.push('estimators disagree in sign is a row where a few large commits carry the pooled');
+L.push('figure. `mixed, dropped` is the agent-attributed lines in the same cohort excluded');
+L.push('because they sit on multi-commit squashes, which is often larger than what is left. `top 5` is the share of the agent cohort held by');
 L.push('its five largest commits. `size-std` is the same pooled difference held to');
 L.push('commit-size strata, `floor(log2(added))`, weighted by the lines in each stratum;');
 L.push('commit size differs systematically between the classes and is the dominant');

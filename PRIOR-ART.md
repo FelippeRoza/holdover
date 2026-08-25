@@ -12,9 +12,9 @@ the widely quoted figures come from.
 | [`stillthere`](https://www.npmjs.com/package/stillthere) | yes | yes | no | yes | no | no | no |
 | [`git-of-theseus`](https://github.com/erikbern/git-of-theseus) | yes | yes | no | n/a | no | n/a | n/a |
 
-The squash column is the one that matters most and it is the newest. Every
-git-history tool in this table except this one credits an agent with the whole of a
-squashed pull request whenever any commit in it carried an agent trailer. On the
+The squash column is the one that matters most and it is the newest. Every tool here
+that reads agent authorship out of trailers, except this one, credits an agent with
+the whole of a squashed pull request whenever any commit in it carried one. On the
 repo used to build this tool that was 87% of the apparent agent lines, and
 correcting it reversed the sign of the result.
 

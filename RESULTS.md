@@ -19,17 +19,38 @@ test the claim. Read them as twenty worked examples of what the diagnostics look
 
 - 19 of 20 repos measurable, 14 above the pre-registered 2,000-line floor.
 - Median pooled gap at 90 days: **+6.5 pp** (IQR +0.4 to +14.9 pp), over 14 repos.
-- Median size-standardised gap: **+9.2 pp** (IQR -0.0 to +14.1 pp), over 14 repos. The pre-registration says the standardised figures win where they disagree with the crude one, and here they do.
+  A two-stage bootstrap over repos and then commits within them puts that at
+  **-2.1 to +15.9 pp**, which includes zero. Commits within a repo are the noise every
+  diagnostic below keeps pointing at, so a repo-only interval would be narrower and
+  wrong.
+- **Median gap in `not gone` share: +2.4 pp.** The pre-registration forbids folding
+  `edited` into `gone`, and publishing only `kept` does exactly that: the complement
+  of `kept` is `edited + gone`. Counting a line that was rewritten in place as
+  surviving reverses 5 of the 14 repos, `Aider-AI/aider` most of all.
+- Median size-standardised gap: **+6.5 pp** (IQR +0.7 to +14.9 pp), over 14 repos.
 - Median new-file-standardised gap: **+2.5 pp** (IQR -1.0 to +17.7 pp), over 14 repos.
 - Median per-commit gap: **+9.4 pp** (IQR +5.2 to +20.4 pp). It is not the same answer.
-- Median kept share: agent 66.6%, human 55.0%.
+- Median kept share: agent 66.6% (IQR 55.4 to 80.7), human 55.0% (IQR 44.4 to 70.9).
+- Median gap with re-added identical lines not counted as kept: +4.9 pp.
+- Split the way [`panel/repos.txt`](panel/repos.txt) splits it: repos whose owner sells the
+  agent, **+6.5 pp** over 8; repos that only use one, **+0.4 pp** over 6. The
+  effect concentrates in the vendors' own repositories.
+- The arrival window narrows the age confound without closing it. Where the two
+  cohorts' line-weighted median ages are within 20%, the median gap is **+0.4 pp** over
+  4 repos; where the human lines are at least 20% older, **+10.4 pp** over 10.
+- Winsorisation clamped 563 commits across 14 repos, trimming
+  5,368,555 lines. It is not a rounding detail: on `Aider-AI/aider` one human
+  commit of 99,939 lines, kept in full, is clamped to 291, and that clamp is most of
+  that row's +22.2 pp.
 - Agent kept share below human: **3 of 14** repos.
-- Support no conclusion, the estimators disagreeing in sign or by more than 20 pp: **6 of 14**. Drop them and the median of the rest is +10.4 pp, which is why they are not dropped.
+- The two estimators disagree in sign on **4 of 14** repos, and are more than 20 pp apart
+  on 2 more. All 6 support no conclusion. Drop them and the median of the rest
+  is +10.4 pp, which is why they are not dropped.
 - New-file share more than 15 pp apart: **5 of 14** repos, where the two cohorts are not the same kind of work.
 - Squash contamination is close to all-or-nothing. Across the 20 repos with
   attribution to read, the pilot included, **8 have none of it** because they do not
-  squash-merge, and **7 have 80% or more** of their agent-attributed lines on
-  squashes that mix human work. The median, 4.9%, is the least useful number here.
+  squash-merge, and **6 have 80% or more** of their agent-attributed lines on
+  squashes that mix human work. The median, 3.1%, is the least useful number here.
   A cross-repo rate built from trailers is partly a measurement of which repos in
   the sample use the squash button.
 - The tips these rows were measured at span **101 days**. Cohorts count back from
@@ -40,37 +61,59 @@ The median is the unit of analysis, per the pre-registration. No line-weighted
 average across repos is reported, because `openai/codex` alone would decide it.
 Median and IQR are the inverse-ECDF quantile, Hyndman-Fan type 1.
 
+## What that adds up to
+
+The crude figure says agent lines are kept about six points more often. Every
+control applied to it moves it toward zero, and none of them is optional:
+
+| holding | median gap |
+| --- | --- |
+| nothing, the crude figure | +6.5 pp |
+| the three states apart, as `not gone` | +2.4 pp |
+| commit size | +6.5 pp |
+| whether the line sits in a new file | +2.5 pp |
+| exposure, on the repos where it is balanced | +0.4 pp |
+| ownership, on the repos that do not sell an agent | +0.4 pp |
+
+So the honest reading of this panel is that most of the crude gap is composition:
+what kind of code, at what commit size, exposed for how long, in whose repository.
+The bootstrap above already includes zero, and six of the fourteen repos disagree
+with themselves. This is a null result with a positive point estimate, not a
+finding that agent code lasts longer.
+
 ## At 90 days
 
-| repo | AI n | dropped as mixed | AI kept | human kept | pooled | size-std | new-file-std | typical | new-file share | top 5 | read with |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `openai/codex` | 11,394 | 157,399 | 60.2% | 58.7% | +1.5 pp | -0.0 pp | +2.4 pp | +5.8 pp | 25.4% vs 31.7% | 50.6% | size strata cover 74.9% of the lines; 53.5% of the size-standardised weight is in strata with 2 commits or fewer on a side; size-standardised gap is -0.0 pp, the other way from the pooled one |
-| `aaif-goose/goose` | 65,712 | 0 | 55.4% | 45.0% | +10.4 pp | +12.3 pp | +11.1 pp | +20.4 pp | 57.9% vs 48.2% | 25.1% | 32 commits have a committer date before their parent's |
+| repo | AI n | mixed, dropped | AI kept | human kept | pooled | not gone | size-std | new-file-std | typical | new-file share | top 5 | read with |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `openai/codex` | 11,394 | 156,842 | 60.2% | 58.7% | +1.5 pp | +2.4 pp | +2.3 pp | +2.4 pp | +5.8 pp | 25.4% vs 31.7% | 50.6% | no threshold tripped |
+| `aaif-goose/goose` | 65,712 | 0 | 55.4% | 45.0% | +10.4 pp | +5.0 pp | +11.2 pp | +11.1 pp | +20.4 pp | 57.9% vs 48.2% | 25.1% | 32 commits have a committer date before their parent's |
 | `OpenHands/OpenHands` | — | — | — | — | — | — | — | — | — | — | `unmeasurable`: the tree at this ref retains almost nothing from before the cohort — a wholesale replacement, not a survival rate |
-| `anomalyco/opencode` | 92,190 | 0 | 47.2% | 38.9% | +8.4 pp | +12.6 pp | +8.2 pp | -0.7 pp | 15.0% vs 34.1% | 14.5% | estimators disagree in sign, 9.0 pp apart; new-file share 19.1 pp apart |
-| `anthropics/claude-code` | 9,861 | 119 | 87.2% | 80.7% | +6.5 pp | -3.9 pp | +2.5 pp | -9.2 pp | 91.8% vs 40.6% | 66.5% | estimators disagree in sign, 15.7 pp apart; new-file share 51.2 pp apart; size strata cover 74.5% of the lines; size-standardised gap is -3.9 pp, the other way from the pooled one |
-| `cline/cline` | 1,537 | 53,787 | 80.5% | 56.8% | +23.7 pp | — | +14.0 pp | +8.3 pp | 73.7% vs 46.9% | 90.4% | below the 2,000-line floor; new-file share 26.8 pp apart; size strata cover only 19.8% of the lines, so no standardised gap |
-| `RooCodeInc/Roo-Code` | 9,879 | 11,061 | 52.8% | 55.3% | -2.5 pp | +9.2 pp | -2.3 pp | +15.3 pp | 39.0% vs 40.1% | 81.1% | estimators disagree in sign, 17.8 pp apart; 96.1% of the size-standardised weight is in strata with 2 commits or fewer on a side; size-standardised gap is +9.2 pp, the other way from the pooled one |
-| `Aider-AI/aider` | 48,474 | 0 | 66.6% | 44.4% | +22.2 pp | +19.4 pp | +22.9 pp | +19.7 pp | 5.7% vs 10.9% | 3.0% | no threshold tripped |
-| `charmbracelet/crush` | 17,349 | 2,121 | 80.7% | 43.8% | +36.9 pp | +35.1 pp | +39.1 pp | +47.0 pp | 58.7% vs 40.8% | 40.0% | new-file share 17.9 pp apart |
-| `continuedev/continue` | 19,222 | 8,883 | 55.6% | 55.0% | +0.6 pp | -0.0 pp | -0.4 pp | +23.3 pp | 56.8% vs 41.7% | 26.0% | estimators 22.7 pp apart; new-file share 15.1 pp apart; size-standardised gap is -0.0 pp, the other way from the pooled one; new-file-standardised gap is -0.4 pp, the other way from the pooled one |
-| `browser-use/browser-use` | 14,238 | 0 | 20.5% | 41.6% | -21.1 pp | -23.5 pp | -20.8 pp | -13.4 pp | 47.7% vs 37.3% | 23.7% | no threshold tripped |
-| `mem0ai/mem0` | 30,408 | 0 | 71.3% | 70.9% | +0.4 pp | +1.1 pp | -1.0 pp | +8.9 pp | 53.8% vs 61.7% | 43.7% | new-file-standardised gap is -1.0 pp, the other way from the pooled one |
-| `pydantic/pydantic-ai` | 142,042 | 0 | 87.2% | 74.4% | +12.9 pp | +12.9 pp | +13.4 pp | +10.8 pp | 49.4% vs 56.6% | 29.1% | no threshold tripped |
-| `stanfordnlp/dspy` | 555 | 13,242 | 96.0% | 93.0% | +3.0 pp | — | +4.4 pp | +1.5 pp | 0.0% vs 37.2% | 67.2% | below the 2,000-line floor; new-file share 37.2 pp apart; size strata cover only 15.5% of the lines, so no standardised gap; new-file strata cover 64.1% of the lines |
-| `danny-avila/LibreChat` | 1,052 | 41,170 | 97.1% | 84.9% | +12.2 pp | — | +13.4 pp | +7.7 pp | 8.6% vs 47.9% | 100.0% | below the 2,000-line floor; new-file share 39.3 pp apart; size strata cover only 22.7% of the lines, so no standardised gap |
-| `crewAIInc/crewAI` | 1,547 | 170,651 | 50.5% | 56.7% | -6.2 pp | — | +10.2 pp | +17.4 pp | 25.5% vs 51.5% | 56.8% | below the 2,000-line floor; estimators disagree in sign, 23.6 pp apart; new-file share 26.0 pp apart; size strata cover only 8.7% of the lines, so no standardised gap; new-file-standardised gap is +10.2 pp, the other way from the pooled one |
-| `modelcontextprotocol/servers` | 3,111 | 895 | 76.4% | 48.7% | +27.6 pp | +14.1 pp | +26.4 pp | +58.1 pp | 45.9% vs 39.6% | 63.3% | estimators 30.5 pp apart |
-| `ghostty-org/ghostty` | 2,490 | 0 | 68.2% | 74.8% | -6.6 pp | -4.0 pp | -7.5 pp | +5.2 pp | 25.1% vs 28.1% | 52.9% | estimators disagree in sign, 11.7 pp apart; size strata cover 78.6% of the lines |
-| `pola-rs/polars` | 561 | 0 | 94.3% | 84.9% | +9.4 pp | — | +9.9 pp | +1.9 pp | 5.7% vs 27.6% | 69.0% | below the 2,000-line floor; new-file share 21.8 pp apart; size strata cover only 36.2% of the lines, so no standardised gap; 2 commits have a committer date before their parent's |
-| `supabase/supabase` | 4,163 | 92,827 | 82.5% | 67.6% | +14.9 pp | +18.8 pp | +17.7 pp | +9.4 pp | 8.6% vs 49.2% | 93.1% | new-file share 40.6 pp apart; size strata cover 66.4% of the lines; 83.0% of the size-standardised weight is in strata with 2 commits or fewer on a side |
-| `getzep/graphiti` *(pilot)* | 2,786 | 21,823 | 76.4% | 81.2% | -4.8 pp | -9.4 pp | -9.5 pp | -98.2 pp | 67.0% vs 26.1% | 80.0% | estimators 93.4 pp apart; new-file share 40.8 pp apart; size strata cover 69.3% of the lines; 63.5% of the size-standardised weight is in strata with 2 commits or fewer on a side |
+| `anomalyco/opencode` | 92,190 | 0 | 47.2% | 38.9% | +8.4 pp | +12.0 pp | +8.8 pp | +8.2 pp | -0.7 pp | 15.0% vs 34.1% | 14.5% | estimators disagree in sign, 9.0 pp apart; new-file share 19.1 pp apart |
+| `anthropics/claude-code` | 9,861 | 119 | 87.2% | 80.7% | +6.5 pp | -0.6 pp | +6.5 pp | +2.5 pp | -9.2 pp | 91.8% vs 40.6% | 66.5% | estimators disagree in sign, 15.7 pp apart; new-file share 51.2 pp apart; one size stratum survives the merge, so its size-standardised gap is the crude one |
+| `cline/cline` | 1,537 | 14,650 | 80.5% | 56.8% | +23.7 pp | +21.8 pp | +23.7 pp | +14.0 pp | +8.3 pp | 73.7% vs 46.9% | 90.4% | below the 2,000-line floor; new-file share 26.8 pp apart; one size stratum survives the merge, so its size-standardised gap is the crude one |
+| `RooCodeInc/Roo-Code` | 9,879 | 7,497 | 52.8% | 55.3% | -2.5 pp | +7.8 pp | -2.5 pp | -2.3 pp | +15.3 pp | 39.0% vs 40.1% | 81.1% | estimators disagree in sign, 17.8 pp apart; one size stratum survives the merge, so its size-standardised gap is the crude one |
+| `Aider-AI/aider` | 48,474 | 0 | 66.6% | 44.4% | +22.2 pp | -9.5 pp | +20.9 pp | +22.9 pp | +19.7 pp | 5.7% vs 10.9% | 3.0% | no threshold tripped |
+| `charmbracelet/crush` | 17,349 | 1,301 | 80.7% | 43.8% | +36.9 pp | +28.9 pp | +36.4 pp | +39.1 pp | +47.0 pp | 58.7% vs 40.8% | 40.0% | new-file share 17.9 pp apart |
+| `continuedev/continue` | 19,222 | 11,177 | 55.6% | 55.0% | +0.6 pp | -4.4 pp | +0.7 pp | -0.4 pp | +23.3 pp | 56.8% vs 41.7% | 26.0% | estimators 22.7 pp apart; new-file share 15.1 pp apart; new-file-standardised gap is -0.4 pp, the other way from the pooled one |
+| `browser-use/browser-use` | 14,238 | 0 | 20.5% | 41.6% | -21.1 pp | -27.0 pp | -21.2 pp | -20.8 pp | -13.4 pp | 47.7% vs 37.3% | 23.7% | no threshold tripped |
+| `mem0ai/mem0` | 30,408 | 0 | 71.3% | 70.9% | +0.4 pp | -2.3 pp | +0.7 pp | -1.0 pp | +8.9 pp | 53.8% vs 61.7% | 43.7% | new-file-standardised gap is -1.0 pp, the other way from the pooled one |
+| `pydantic/pydantic-ai` | 142,042 | 0 | 87.2% | 74.4% | +12.9 pp | +6.2 pp | +11.9 pp | +13.4 pp | +10.8 pp | 49.4% vs 56.6% | 29.1% | no threshold tripped |
+| `stanfordnlp/dspy` | 555 | 3,637 | 96.0% | 93.0% | +3.0 pp | +2.2 pp | +3.0 pp | +4.4 pp | +1.5 pp | 0.0% vs 37.2% | 67.2% | below the 2,000-line floor; new-file share 37.2 pp apart; one size stratum survives the merge, so its size-standardised gap is the crude one; new-file strata cover 64.1% of the lines |
+| `danny-avila/LibreChat` | 1,052 | 16,031 | 97.1% | 84.9% | +12.2 pp | +6.2 pp | +12.2 pp | +13.4 pp | +7.7 pp | 8.6% vs 47.9% | 100.0% | below the 2,000-line floor; new-file share 39.3 pp apart; 100.0% of the size-standardised weight is in strata under 10 commits a side; one size stratum survives the merge, so its size-standardised gap is the crude one; 100.0% of the new-file-standardised weight is in strata under 10 commits a side |
+| `crewAIInc/crewAI` | 1,547 | 28,881 | 50.5% | 56.7% | -6.2 pp | -3.9 pp | -6.2 pp | +10.2 pp | +17.4 pp | 25.5% vs 51.5% | 56.8% | below the 2,000-line floor; estimators disagree in sign, 23.6 pp apart; new-file share 26.0 pp apart; one size stratum survives the merge, so its size-standardised gap is the crude one; 51.5% of the new-file-standardised weight is in strata under 10 commits a side; new-file-standardised gap is +10.2 pp, the other way from the pooled one |
+| `modelcontextprotocol/servers` | 3,111 | 166 | 76.4% | 48.7% | +27.6 pp | +20.4 pp | +27.6 pp | +26.4 pp | +58.1 pp | 45.9% vs 39.6% | 63.3% | estimators 30.5 pp apart; one size stratum survives the merge, so its size-standardised gap is the crude one |
+| `ghostty-org/ghostty` | 2,490 | 0 | 68.2% | 74.8% | -6.6 pp | -2.4 pp | -6.7 pp | -7.5 pp | +5.2 pp | 25.1% vs 28.1% | 52.9% | estimators disagree in sign, 11.7 pp apart |
+| `pola-rs/polars` | 561 | 0 | 94.3% | 84.9% | +9.4 pp | +5.7 pp | +9.4 pp | +9.9 pp | +1.9 pp | 5.7% vs 27.6% | 69.0% | below the 2,000-line floor; new-file share 21.8 pp apart; one size stratum survives the merge, so its size-standardised gap is the crude one; 2 commits have a committer date before their parent's |
+| `supabase/supabase` | 4,163 | 90,615 | 82.5% | 67.6% | +14.9 pp | +12.2 pp | +14.9 pp | +17.7 pp | +9.4 pp | 8.6% vs 49.2% | 93.1% | new-file share 40.6 pp apart; one size stratum survives the merge, so its size-standardised gap is the crude one |
+| `getzep/graphiti` *(pilot)* | 2,786 | 37,118 | 76.4% | 81.2% | -4.8 pp | -8.8 pp | -4.8 pp | -9.5 pp | -98.2 pp | 67.0% vs 26.1% | 80.0% | estimators 93.4 pp apart; new-file share 40.8 pp apart; one size stratum survives the merge, so its size-standardised gap is the crude one |
 
 `pooled` is the line-weighted difference in kept share, agent minus human. `typical` is
-the same difference between the median per-commit rates. A row where they disagree in
-sign is a row where a few large commits carry the pooled figure. `dropped as mixed` is
-the agent-attributed lines excluded because they sit on multi-commit squashes, which is
-often larger than the measured cohort. `top 5` is the share of the agent cohort held by
+the same difference between the median per-commit rates. `not gone` is the same
+difference counting a line that was rewritten in place as surviving, which is the
+reading the pre-registration insists on keeping separate from `kept`. A row where two
+estimators disagree in sign is a row where a few large commits carry the pooled
+figure. `mixed, dropped` is the agent-attributed lines in the same cohort excluded
+because they sit on multi-commit squashes, which is often larger than what is left. `top 5` is the share of the agent cohort held by
 its five largest commits. `size-std` is the same pooled difference held to
 commit-size strata, `floor(log2(added))`, weighted by the lines in each stratum;
 commit size differs systematically between the classes and is the dominant

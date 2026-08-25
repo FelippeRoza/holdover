@@ -6,7 +6,7 @@ its output.
 
 ## What the pilot figure did during development
 
-graphiti's measured gap moved four times, every time because a bug was fixed or a
+graphiti's measured gap moved three times, every time because a bug was fixed or a
 confound was controlled:
 
 | measured gap | after fixing |
@@ -41,7 +41,7 @@ questions and on real repos they disagree by tens of points. The pooled share is
 "how much of what was written survived", and it is dominated by the largest
 commits. The per-commit median is "what happens to a typical commit". On graphiti,
 the per-commit median is 0%, so at least half its agent commits keep nothing, while
-five large commits holding 80% of the lines survive nearly intact. Pooled: 76.4%.
+five large commits holding 80% of the lines are kept at 82.8%. Pooled: 76.4%.
 Typical: 0%. Quoting either one alone is misleading, so the tool says so
 out loud when they disagree in sign.
 
@@ -73,12 +73,12 @@ comment in `survival.py`, which its own author rejected; see
 [PRIOR-ART.md](PRIOR-ART.md). The third is quoted second-hand and this project has
 not traced it to a source, which is itself the problem.
 
-The ladder below is **not** a correction of that paper. It establishes agent
-authorship from the AIDev dataset, where an agent bot opened the pull request, so
-the diff is the agent's by construction and a squash merge mixes nothing in. Every
-rung here applies to tools and scans that read `Co-authored-by` trailers, which is
-what any tool can do on a repo it merely cloned, and which is what this tool did
-before the squash rung was added.
+The ladder below is **not** a correction of that paper. The paper establishes agent
+authorship from the AIDev dataset, where an agent bot opened the pull request, so the
+diff is the agent's by construction and a squash merge mixes nothing in. Every rung
+here applies to tools and scans that read `Co-authored-by` trailers, which is all a
+tool can do on a repo it merely cloned, and which is what this tool did before the
+squash rung was added.
 
 `holdover --decompose` walks from the strictest of those definitions to this one, one
 change at a time, so each choice is a number. The ladder is in
@@ -101,7 +101,7 @@ finished measurement would move the number a lot. Do not quote a row as an
 attribution of variance.
 
 **Step 0 is a strawman.** It is the harshest defensible reading of the published
-definitions, assembled from three papers, not a re-run of anyone's pipeline. The
+definitions, assembled from three published figures, not a re-run of anyone's pipeline. The
 ladder also ends at this tool by construction, so it cannot show a choice that goes
 the other way.
 
@@ -123,10 +123,10 @@ Five passes, all `git`:
    brought it in landed.
 3. **Count.** One `git log -U0 -M --patch` stream gives the line ranges each
    commit added, in that commit's own coordinate space.
-4. **Blame.** `git blame --incremental -C` over every text file at HEAD, in
+4. **Blame.** `git blame --incremental -C -w` over every text file at HEAD, in
    parallel across cores, honouring `.git-blame-ignore-revs` when the repo commits
    one.
-5. **Trace.** For lines blame no longer credits to their author, one `git diff -U0`
+5. **Trace.** For lines blame no longer credits to their author, one `git diff -U0 -w`
    per commit decides `edited` from `gone`.
 
 ### Why those flags
@@ -184,7 +184,7 @@ Matching the display name does not work. Sixteen distinct names pair with
 `noreply@anthropic.com` across a six-repo sample: `Claude`, `Claude Sonnet 5`,
 `Claude Opus 4.8 (1M context)`, and `goose`, which is a different tool running an
 Anthropic model. Matching a keyword anywhere in the message is far worse: `codex`
-flags 4,829 of the 9,740 commits in `openai/codex`, because the repo is named
+flags 4,829 of the 9,742 commits in `openai/codex`, because the repo is named
 codex. Anchored to a trailer line, the same word flags 360, all real.
 
 The author field is not optional. Aider's two attribution modes are mutually
@@ -215,7 +215,7 @@ Stated plainly, because most of them cannot be fixed.
   to any git-level signal; one config line (`attribution.commit: ""`,
   `--no-attribute-co-authored-by`, `includeCoAuthoredBy: false`) silences a repo
   permanently and silently; PR-body-only attribution never enters git at all; and
-  Aider's default flipped mid-2025, splitting its own history in half.
+  Aider's default flipped mid-2025, and its two modes never co-occur.
 - **The attribution signal is self-asserted and forgeable.** It is text in a commit
   message with no integrity guarantee, and the tools' own documentation shows how
   to set it to an arbitrary value. Over 480 public commits carry a Claude trailer
@@ -250,7 +250,7 @@ Stated plainly, because most of them cannot be fixed.
   per-invocation choice made by the person deciding whether the work is worth
   attributing, and the repos with the most agent history are the agent vendors'
   own. Agent commit share across the twenty repos in [RESULTS.md](RESULTS.md) has a
-  median of 3.1% and a range from 0.1% to 30%.
+  median of 1.8% and a range from 0.1% to 30%.
 - **Squashed PRs are dropped, not measured, and that can empty a repo.** A
   multi-commit squash carrying agent attribution is reported as `unattributable`.
   On a repo that squash-merges everything, this can leave nothing to measure, and
@@ -317,7 +317,7 @@ Stated plainly, because most of them cannot be fixed.
   a single `git log --numstat` over 5,460 commits took 77 seconds because every
   diff is a network round trip.
 - **Performance is bounded by lines at HEAD, not commits.** graphiti, 950 commits,
-  takes 8 seconds. `openai/codex`, 9,740 commits, takes about 285, most of it blame.
+  takes 8 seconds. `openai/codex`, 9,742 commits, takes about 285, most of it blame.
   `supabase/supabase` takes 12 minutes. That is git-bound, not
   fixable in this tool.
 - **This is one repo at a time.** Across repos the unit of analysis must be the

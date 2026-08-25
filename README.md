@@ -55,8 +55,8 @@ other tool in [PRIOR-ART.md](PRIOR-ART.md) corrects for it. A headline "AI code
 survival rate" computed from `Co-authored-by` trailers on a squash-merging repo is
 mostly measuring human pull requests.
 
-The ladder is sequential and step 0 is a strawman assembled from three papers, not a
-re-run of anyone's pipeline. [METHODOLOGY.md](METHODOLOGY.md) says what that does and
+The ladder is sequential and step 0 is a strawman assembled from three published
+figures, not a re-run of anyone's pipeline. [METHODOLOGY.md](METHODOLOGY.md) says what that does and
 does not license you to conclude.
 
 ## The default report
@@ -79,6 +79,8 @@ getzep/graphiti
 
     gap, pooled        -4.8 pp
     gap, typical       -98.2 pp
+    the two estimators are too far apart to support a conclusion: the pooled
+    figure is a few large commits, not a property of the code.
     median line age    191.3 d (AI)  vs 340.8 d (human), line-weighted
     in new files        67.0%   26.1%
     the two cohorts are not the same kind of work: a line in a file its own
@@ -97,7 +99,7 @@ graphiti is the repo the tool was built against, so it is a worked example rathe
 than evidence, and -4.8 pp is not a finding: the per-commit estimator says -98.2,
 the agent cohort is 67% new-file lines against the humans' 26%, and five commits are
 80% of it. The honest report here is *no conclusion in either direction*. That
-figure moved four times during development, every time because a bug was fixed or a
+figure moved three times during development, every time because a bug was fixed or a
 confound was controlled; [METHODOLOGY.md](METHODOLOGY.md) has the steps.
 
 > The npm package `keeprate`, and the package `stillthere`, are unrelated
@@ -147,11 +149,11 @@ no conclusion at all, because their two estimators disagree.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `Aider-AI/aider` | 48,474 | 66.6% | 44.4% | **+22.2 pp** | +19.7 pp | 6% vs 11% | nothing tripped, and stable at every horizon. The cleanest result here |
 | `browser-use/browser-use` | 14,238 | 20.5% | 41.6% | **-21.1 pp** | -13.4 pp | 48% vs 37% | nothing tripped either, and it runs the other way |
-| `openai/codex` | 11,394 | 60.2% | 58.7% | +1.5 pp | -1.2 pp | 25% vs 32% | estimators disagree in sign, and the gap is negative at 30 days |
+| `openai/codex` | 11,394 | 60.2% | 58.7% | +1.5 pp | +5.8 pp | 25% vs 32% | nothing tripped either, but the gap is negative at 30 days |
 | `getzep/graphiti` | 2,786 | 76.4% | 81.2% | -4.8 pp | -98.2 pp | 67% vs 26% | estimators 93 pp apart, 5 commits are 80% of the cohort, so no conclusion |
-| `OpenHands/OpenHands` | — | — | — | — | — | — | `unmeasurable`: the tree was replaced wholesale, so both classes retain nothing |
+| `OpenHands/OpenHands` | — | — | — | — | — | — | `unmeasurable`: the tree was replaced wholesale, so neither class retains 1% |
 
-Read the *level* as well as the gap: 66.6%, 20.5%, 59.6%, 76.4%. A headline "AI code
+Read the *level* as well as the gap: 66.6%, 20.5%, 60.2%, 76.4%. A headline "AI code
 survives N% of the time" describes a repo, not agents. The two cleanest rows here
 point in opposite directions by more than 20 points each.
 
@@ -185,6 +187,7 @@ holdover <owner/repo>        clone a public GitHub repo and measure it
 --winsor 0.99                clamp per-commit line counts at this percentile
 --branch <ref>               measure a ref other than the detected default
 --quiet                      no progress output
+--version                    print the version and exit
 ```
 
 Exit codes: `0` measured, `3` unmeasurable, `1` not a repo, `2` bad arguments.

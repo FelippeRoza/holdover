@@ -54,7 +54,7 @@ and including if the difference is not distinguishable from zero.
 - **Clock.** Arrival on the default branch: a commit on the first-parent trunk
   arrives at its own committer date, any other commit arrives when the oldest
   trunk commit having it as an ancestor arrived. Author date is not used.
-- **Blame.** `git blame --incremental -C`, honouring `.git-blame-ignore-revs`
+- **Blame.** `git blame --incremental -C -w`, honouring `.git-blame-ignore-revs`
   when the repository commits one. Not `-C -C` or `-C -C -C`.
 - **Outcome.** Three states: `kept`, `edited`, `gone`, as defined in
   `src/fate.js`. The headline is the 90-day `kept` share. `edited` will never be

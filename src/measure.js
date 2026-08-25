@@ -56,8 +56,8 @@ async function commitIdentities(cwd, branch, ignored,
  *     `n - 1` for any n < 100, so p99 clamps nothing at all below 100 commits.
  *     Agent cohorts are usually under 100 commits and human cohorts usually over,
  *     so the clamp only ever hit the comparison group. On graphiti it clamped one
- *     human commit and zero agent commits, and that alone moved the reported gap
- *     from +10.0 pp to +13.6 pp.
+ *     human commit and zero agent commits, and it moved the reported gap on its
+ *     own. See METHODOLOGY.md for the order the corrections were found in.
  */
 export function sharedCap(allRows, percentile) {
   if (!percentile || percentile >= 1 || allRows.length < 3) return Infinity;
@@ -108,11 +108,14 @@ export function winsorise(rows, cap) {
     capped++;
     trimmed += r.added - cap;
     const [kept, edited, gone] = apportion([r.kept, r.edited, r.gone], cap);
+    const addedInNewFiles = Math.round((r.addedInNewFiles ?? 0) * scale);
     return {
       ...r,
       added: cap,
-      addedInNewFiles: Math.round((r.addedInNewFiles ?? 0) * scale),
-      keptInNewFiles: Math.round((r.keptInNewFiles ?? 0) * scale),
+      rawAdded: r.added,
+      addedInNewFiles,
+      keptInNewFiles: Math.min(
+        Math.round((r.keptInNewFiles ?? 0) * scale), kept, addedInNewFiles),
       kept,
       edited,
       gone,

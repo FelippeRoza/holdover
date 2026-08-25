@@ -14,8 +14,8 @@
 // Signal 2 is not optional. Aider's two attribution modes are mutually exclusive
 // by design, so across its own 13,138-commit history the trailer and the author
 // suffix never co-occur: trailer-only detection sees 67 commits, author-only sees
-// 3,661. Cursor, Windsurf, Jules, Devin, Replit, Lovable, v0 and Bolt all commit
-// as themselves and write no agent trailer at all.
+// 3,661. Cursor, Windsurf, Jules, Devin, Replit and v0 write a trailer and also
+// commit under an agent identity, so both signals are needed.
 //
 // Matching the name instead of the email does not work either. Sixteen distinct
 // names pair with noreply@anthropic.com in a six-repo sample — `Claude`,
@@ -168,9 +168,9 @@ const MARKER_LINES = [
 
 /**
  * `Assisted-by:` without an email. The Linux kernel mandates `Assisted-by:
- * AGENT:MODEL`, but curl has used the same trailer to credit humans since 2020
- * across 13,304 commits, so a bare name is not enough — require the AGENT:MODEL
- * shape, which a human credit does not have.
+ * AGENT:MODEL`, but curl has used the same trailer to credit humans since 2013,
+ * across roughly 280 commits, none naming a tool. A bare name is not enough, so
+ * require the AGENT:MODEL shape, which a human credit does not have.
  */
 const ASSISTED_BY_MODEL = /^[ \t]*assisted-by[ \t]*:[ \t]*[\w.+-]+:[\w.+-]/im;
 
