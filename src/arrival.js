@@ -42,7 +42,7 @@ export async function arrivalDates(cwd, branch) {
   // The tip is resolved explicitly rather than taken as git log's first line:
   // log orders by commit date by default, so one forged future date is enough to
   // put some other commit first.
-  const head = (await git(cwd, ['rev-parse', branch])).trim();
+  const head = (await git(cwd, ['rev-parse', `${branch}^{commit}`])).trim();
   const trunkOrder = [];
   const trunk = new Set();
   for (let sha = head; sha && commits.has(sha) && !trunk.has(sha);) {

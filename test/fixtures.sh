@@ -179,4 +179,12 @@ at "$R" 2025-01-01T00:00:00 "agent writes big.py" "" "$AGENT"
 { head -1 "$R/big.py"; echo "one replacement line"; } > "$R/big.py.tmp"
 mv "$R/big.py.tmp" "$R/big.py"; git -C "$R" add -A
 at "$R" 2025-03-01T00:00:00 "human replaces almost all of big.py"
+# ------------------------- an ignore-revs file blame cannot read: every blame fails
+new blameblind
+R="$ROOT/blameblind"
+lines 20 "$R/a.py"; git -C "$R" add -A
+at "$R" 2025-01-01T00:00:00 "agent adds a.py" "" "$AGENT"
+echo 'abc1234' > "$R/.git-blame-ignore-revs"
+git -C "$R" add -A; at "$R" 2025-02-01T00:00:00 "human adds an unreadable ignore-revs"
+
 echo "fixtures built in $ROOT"

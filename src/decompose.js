@@ -95,7 +95,12 @@ export async function decompose(cwd, onStep) {
   for (const step of STEPS) {
     const horizons = step.opts.horizons ?? [1];
     const r = await measure(cwd, { ...step.opts, horizons });
-    if (r.unmeasurable) { rows.push({ ...step, unmeasurable: r.unmeasurable }); continue; }
+    // A rung that reads all of history is not vetoed by a verdict about the
+    // fabricated one-day cohort. Verdicts that leave no counts at all still are.
+    if (r.unmeasurable && (step.opts.horizons || !r.all)) {
+      rows.push({ ...step, unmeasurable: r.unmeasurable });
+      continue;
+    }
 
     const pick = (side) => (step.opts.horizons
       ? r.cohorts[r.cohorts.length - 1][side]

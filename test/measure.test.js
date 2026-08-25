@@ -321,10 +321,11 @@ test('a report larger than the pipe buffer survives the pipe', async () => {
   // to a terminal and to a file, and silently truncated `holdover --json | jq`.
   // Many horizons is the cheap way to a report bigger than the buffer.
   const horizons = Array.from({ length: 250 }, (_, i) => i + 1).join(',');
+  // Exit 3 is unmeasurable, which still prints the report.
   const { stdout } = await exec('node',
     [join(here, '..', 'src', 'cli.js'), join(FX, 'editedgone'),
       '--json', '--quiet', '--horizons', horizons],
-    { maxBuffer: 1 << 26 });
+    { maxBuffer: 1 << 26 }).catch((e) => (e.code === 3 ? e : Promise.reject(e)));
   assert.ok(stdout.length > 65536, `report was ${stdout.length} bytes, expected > 64 KiB`);
   assert.equal(JSON.parse(stdout).cohorts.length, 250);
 });
@@ -376,4 +377,12 @@ test('a hunk cannot replace more lines than it adds', async () => {
   assert.equal(r.all.agent.kept, 1);
   assert.equal(r.all.agent.edited, 1, 'one line added, so one line replaced');
   assert.equal(r.all.agent.gone, 98);
+});
+
+test('a blame that could not run is refused, not reported as 0% kept', async () => {
+  // One abbreviated sha in .git-blame-ignore-revs makes git blame exit 128 for
+  // every file. Every line then looks like an orphan and the diff pass books it,
+  // so the report used to print a confident 0% kept.
+  const r = await measure(join(FX, 'blameblind'), { horizons: [1], winsor: 1 });
+  assert.match(r.unmeasurable, /blame failed/);
 });

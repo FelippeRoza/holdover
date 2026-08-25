@@ -163,3 +163,16 @@ test('a tool name that is also a given name does not match', () => {
   assert.equal(
     classify('feat: x\n\nCo-authored-by: Jules <jules@google.com>', 'A <a@corp.dev>'), 'agent');
 });
+
+test('a tool name only counts at the domain that ships it', () => {
+  // One vendor's product name must not let a person at another vendor through.
+  for (const addr of ['kiro@openai.com', 'bolt@openai.com', 'amp@anthropic.com',
+    'codex.smith@openai.com', 'codex-smith@openai.com']) {
+    assert.equal(classify('fix: adjust the retry backoff', `P <${addr}>`), 'human', addr);
+  }
+  for (const addr of ['codex@openai.com', 'cascade@windsurf.ai', 'openhands@all-hands.dev',
+    'cursoragent@cursor.com', 'claude-bot@anthropic.com']) {
+    assert.equal(
+      classify(`feat: x\n\nCo-authored-by: T <${addr}>`, 'A <a@corp.dev>'), 'agent', addr);
+  }
+});

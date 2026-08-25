@@ -13,8 +13,12 @@ const execFileAsync = promisify(execFile);
  * while `ls-files -z` emits the raw bytes — so the two sides of the measurement
  * never join and every line in any non-ASCII path scores 0% kept. Measured on a
  * fixture: 4 lines added, 0 kept, where the truth is 4 of 4.
+ *
+ * `--literal-pathspecs` because a path beginning with a colon is otherwise read
+ * as pathspec magic: `git diff -- ':magic.py'` matches nothing, exits 0, and the
+ * missing hunks read as "unchanged, still there".
  */
-const GLOBAL = ['-c', 'core.quotePath=false'];
+const GLOBAL = ['--literal-pathspecs', '-c', 'core.quotePath=false'];
 
 // git blame output for one file is bounded by the file; 256 MB is far past any
 // real source file and still small enough to fail loudly on a pathological one.

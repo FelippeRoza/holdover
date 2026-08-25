@@ -93,7 +93,7 @@ export async function addedLines(cwd, branch, wanted, skip = skipPath) {
   };
 
   await gitLines(cwd, [
-    'log', branch, '--no-merges', '--topo-order', '-U0', '-M', '--patch',
+    'log', branch, '--no-merges', '--topo-order', '-U0', '-M', '-l0', '--patch',
     '--no-color', '--no-textconv', `--format=${REC}%H`,
   ], onLine);
 

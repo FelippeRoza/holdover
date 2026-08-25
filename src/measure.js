@@ -94,6 +94,8 @@ function apportion(parts, total) {
  * The cohort the report expands and the degeneracy gate looks at. One rule, or a
  * horizon list without 90 makes the gate examine a cohort nobody is shown.
  */
+const BLAME_FLOOR = 0.9; // least share of files blame must read before a rate means anything
+
 export function headlineCohort(cohorts) {
   return cohorts.find((c) => c.days === 90) ?? cohorts[Math.floor(cohorts.length / 2)];
 }
@@ -119,7 +121,7 @@ export function winsorise(rows, cap) {
       kept,
       edited,
       gone,
-      reattributed: Math.round(r.reattributed * scale),
+      reattributed: Math.min(Math.round(r.reattributed * scale), kept),
       wasCapped: true,
     };
   });
@@ -217,7 +219,7 @@ export async function measure(startDir, opts = {}) {
   // Read the tip before anything can bail out: an unmeasurable verdict is still
   // a verdict about one specific commit, and without the sha it cannot be
   // rechecked or told apart from the same repo a month later.
-  const tipSha = (await git(cwd, ['rev-parse', branch])).trim();
+  const tipSha = (await git(cwd, ['rev-parse', `${branch}^{commit}`])).trim();
 
   const defects = await cloneDefects(cwd);
   if (defects.length && !opts.allowPartial) {
@@ -383,9 +385,19 @@ export async function measure(startDir, opts = {}) {
   // A cohort with nothing in it is not a rate. The report used to print a table
   // of dashes and exit 0, which is the failure this tool exists to refuse. The
   // counts are still returned, they just do not amount to a keep rate.
-  const barren = cohorts.every((c) => c.agent.lines === 0)
-    ? `no agent lines have had ${Math.min(...horizons)} days on ${branch} yet`
-    : null;
+  // A blame that could not run is the dangerous failure: every line becomes an
+  // orphan, the diff pass books it, and the report prints a confident 0% or 100%.
+  // One abbreviated sha in .git-blame-ignore-revs does it to every file at once.
+  const head90 = headlineCohort(cohorts);
+  const blamable = headFiles.size - blame.skipped.length;
+  const barren = headFiles.size && blamable / headFiles.size < BLAME_FLOOR
+    ? `blame failed on ${blame.skipped.length} of ${headFiles.size} files, so nothing here is`
+      + ' traceable to its author'
+    : cohorts.every((c) => c.agent.lines === 0)
+      ? `no agent lines have had ${Math.min(...horizons)} days on ${branch} yet`
+      : head90 && head90.agent.lines === 0
+        ? `no agent lines have had ${head90.days} days on ${branch} yet`
+        : null;
 
   return {
     ...(barren ? { unmeasurable: barren } : {}),

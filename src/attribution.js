@@ -29,27 +29,31 @@
  * or Aider as agent work. openai/codex read 7,733 agent commits that way against
  * the 360 an anchored trailer search finds.
  */
-const AGENT_DOMAINS = [
-  'anthropic.com',      // Claude Code, and goose when it runs an Anthropic model
-  'openai.com',         // Codex
-  'cursor.com',         // Cursor
-  'all-hands.dev', 'openhands.dev', // OpenHands (mid-migration between the two)
-  'aider.chat', 'aider.dev',        // Aider (renamed domains)
-  'opencode.ai',        // opencode
-  'cognition.ai', 'devin.ai',       // Devin
-  'factory.ai',         // Factory Droid
-  'kiro.dev',           // Kiro
-  'windsurf.ai',        // Windsurf Cascade
-  'tabnine.com',        // Tabnine CLI
-  'charm.land',         // Crush
-  'continue.dev',       // Continue
-  'ampcode.com',        // Amp
-  'charlielabs.ai',     // Charlie
-  'replit.com',         // Replit Agent
-  'bolt.new',           // Bolt
-  'lovable.dev',        // Lovable
-  'v0.dev',             // v0
-];
+const AGENT_DOMAINS = new Map([
+  ['anthropic.com', ['claude!']],  // Claude Code, and goose on an Anthropic model.
+                                   // ! because Claude is also a person's name.
+  ['openai.com', ['codex']],
+  ['cursor.com', ['cursor']],
+  ['all-hands.dev', ['openhands']],
+  ['openhands.dev', ['openhands']],
+  ['aider.chat', ['aider']],
+  ['aider.dev', ['aider']],
+  ['opencode.ai', ['opencode']],
+  ['cognition.ai', ['devin']],
+  ['devin.ai', ['devin']],
+  ['factory.ai', ['factory', 'droid']],
+  ['kiro.dev', ['kiro']],
+  ['windsurf.ai', ['windsurf', 'cascade']],
+  ['tabnine.com', ['tabnine']],
+  ['charm.land', ['crush']],
+  ['continue.dev', ['continue']],
+  ['ampcode.com', ['amp']],
+  ['charlielabs.ai', ['charlie']],
+  ['replit.com', ['replit']],
+  ['bolt.new', ['bolt']],
+  ['lovable.dev', ['lovable']],
+  ['v0.dev', ['v0']],
+]);
 
 /**
  * Local parts that name a tool rather than a person. Required at every domain
@@ -58,17 +62,22 @@ const AGENT_DOMAINS = [
  * safe direction: a missed agent line lowers a rate that is already a floor,
  * while a human line counted as agent is the error this tool exists to correct.
  */
-const AGENT_LOCALPART = new RegExp(
-  '^(?:no-?reply|noreply'
-  // Tool names, but not the ones that are also common given names: claude,
-  // charlie, jules and ai are all people, and matching them would put
-  // claude@anthropic.com back in the agent bucket.
-  + '|devin|codex|crush|droid|tabnine|opencode|lovable|windsurf|cascade|replit'
-  + '|openhands|aider|cursor|copilot|swe-agent|factory|continue|amp|bolt|kiro|v0'
-  + ')(?:agent|bot|assistant)?(?:[+._-]|$)'
-  // A bare role word, which no vendor gives to a person.
-  + '|^(?:agent|bot|assistant)(?:[+._-]|$)',
-);
+const ROLE = '(?:agent|bot|assistant|cli|ci|action)';
+const NOREPLY = new RegExp(`^(?:no-?reply|${ROLE})(?:[+._-]|$)`);
+
+/** `claude@anthropic.com` is a person; `claude` at anthropic.com with a role
+ *  suffix, or any no-reply address, is not. The tool name has to match the
+ *  domain that ships it, or one vendor's product name lets a person at another
+ *  vendor through: `kiro@openai.com` was reading as an agent. */
+function localPartIsAgent(local, tools) {
+  if (NOREPLY.test(local)) return true;
+  return tools.some((spec) => {
+    const bareIsPerson = spec.endsWith('!');
+    const t = bareIsPerson ? spec.slice(0, -1) : spec;
+    if (local === t) return !bareIsPerson;
+    return new RegExp(`^(?:${t}[-._]?${ROLE}|${ROLE}[-._]?${t})$`).test(local);
+  });
+}
 
 /**
  * Addresses whose domain is not the vendor's own, so the local part must match in
@@ -87,6 +96,7 @@ const EXACT_EMAILS = [
  * 175728472+Copilot and 223556219+Copilot, and those are two different apps.
  */
 const AGENT_GH_SLUGS = [
+  'claude[bot]',
   'Copilot',
   'copilot-swe-agent[bot]',
   'chatgpt-codex-connector[bot]',
@@ -182,7 +192,8 @@ function emailIsAgent(email) {
   if (at < 0) return false;
   const domain = addr.slice(at + 1);
   const local = addr.slice(0, at);
-  if (AGENT_DOMAINS.includes(domain)) return AGENT_LOCALPART.test(local);
+  const tools = AGENT_DOMAINS.get(domain);
+  if (tools) return localPartIsAgent(local, tools);
   if (domain === 'users.noreply.github.com') {
     const plus = local.indexOf('+');
     const slug = (plus < 0 ? local : local.slice(plus + 1));
@@ -249,4 +260,4 @@ export function isMultiCommitSquash(message) {
   return bullets >= 2 || /^-{5,}\s*$/m.test(text);
 }
 
-export const RULES = { AGENT_DOMAINS, EXACT_EMAILS, AGENT_GH_SLUGS };
+export const RULES = { AGENT_DOMAINS: [...AGENT_DOMAINS.keys()], EXACT_EMAILS, AGENT_GH_SLUGS };
