@@ -20,11 +20,11 @@ const USAGE = `holdover — how much of an agent's output is still in the repo
   holdover <owner/repo>        clone a public GitHub repo and measure it
 
   --horizons 30,90,180         days since arrival on the default branch
-  --json                       machine-readable output
+  --json                       machine-readable output, including a per-commit table
+  --decompose                  show what each definitional choice is worth
   --winsor 0.99                clamp per-commit line counts at this percentile
   --branch <ref>               measure a ref other than the detected default
   --quiet                      no progress output
-  --decompose                  show what each definitional choice is worth
   --version                    print the version and exit
 `;
 

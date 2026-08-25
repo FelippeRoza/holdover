@@ -144,7 +144,8 @@ as surviving, +2.3 pp held to whether a line sits in a file its own commit creat
 and +0.4 pp both on the repos whose two cohorts have comparable exposure and on the
 repos whose owner does not sell an agent. A bootstrap over repos and then commits
 within them spans -2.4 to +15.3 pp. Six of the fourteen repos above the line floor
-support no conclusion at all, because their own two estimators disagree.
+support no conclusion at all: on four the two estimators disagree in sign, and on
+two more they are over 20 points apart.
 
 So this panel is a null result with a positive point estimate. That is the finding,
 and it is the opposite of what a single number would have told you.
