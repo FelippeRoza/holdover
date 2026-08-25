@@ -138,12 +138,16 @@ attribution. See [the decomposition](METHODOLOGY.md#where-the-disagreeing-number
 Measured with the shipped defaults at the 90-day horizon, at the tips recorded in
 [RESULTS.md](RESULTS.md#provenance). This is the whole case for reporting the
 diagnostics rather than the number. All twenty repos are in
-[RESULTS.md](RESULTS.md), where the median pooled gap is +6.5 pp with an
-interquartile range of +0.4 to +14.9. Held to commit-size strata that becomes
-+9.2 pp, and held to whether a line sits in a file its own commit created,
-**+2.5 pp**. The pre-registration says the standardised figure is the result
-where the two disagree. Six of the fourteen repos above the line floor support
-no conclusion at all, because their two estimators disagree.
+[RESULTS.md](RESULTS.md). The median pooled gap there is +6.5 pp, and every control
+applied to it moves it toward zero: +2.4 pp once a line rewritten in place counts
+as surviving, +2.5 pp held to whether a line sits in a file its own commit created,
++0.4 pp on the four repos whose two cohorts have comparable exposure, and +0.4 pp on
+the repos whose owner does not sell an agent. A bootstrap over repos and then commits
+within them spans -2.1 to +15.9 pp. Six of the fourteen repos above the line floor
+support no conclusion at all, because their own two estimators disagree.
+
+So this panel is a null result with a positive point estimate. That is the finding,
+and it is the opposite of what a single number would have told you.
 
 | repo | AI n | AI kept | human kept | pooled | typical | new-file share | read with |
 | --- | --- | --- | --- | --- | --- | --- | --- |
