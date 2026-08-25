@@ -41,23 +41,23 @@ questions and on real repos they disagree by tens of points. The pooled share is
 "how much of what was written survived", and it is dominated by the largest
 commits. The per-commit median is "what happens to a typical commit". On graphiti,
 the per-commit median is 0%, so at least half its agent commits keep nothing, while
-five large commits holding 80% of the lines are kept at 82.8%. Pooled: 76.4%.
-Typical: 0%. Quoting either one alone is misleading, so the tool says so
+five large commits holding 79% of the lines survive better than the cohort. Pooled:
+76.2%. Typical: 7.1%. Quoting either one alone is misleading, so the tool says so
 out loud when they disagree in sign.
 
 **Squashed pull requests.** GitHub credits every commit author in a PR as a
 co-author on the squash commit, so one agent-trailered commit in a five-commit PR
 puts the agent trailer on a diff that is mostly somebody else's. On a fixture where
 an agent wrote 12 of 100 lines in a PR, trailer attribution claims all 100. On
-graphiti, **zero** of 129 agent-attributed commits have an agent in the author
-field, and 68 are multi-commit squashes carrying 87% of the apparent agent lines.
+graphiti, **zero** of 138 agent-attributed commits have an agent in the author
+field, and 74 are multi-commit squashes carrying 88% of the apparent agent lines.
 Those are reported as `unattributable` and excluded from both rates, because a
 clone cannot recover which lines were the agent's. This one correction takes
-graphiti from 45,279 agent lines at 92.1% to 3,259 at 75.9%, and flips the gap from
-+15.0 pp to -1.1 pp.
+graphiti from 45,992 agent lines at 92.1% to 3,315 at 75.7%, and flips the gap from
++15.2 pp to -1.2 pp.
 
 **What kind of code it is.** A line in a file its own commit created has nothing to
-be rewritten by. On graphiti 67% of agent lines are in new files against 26% of
+be rewritten by. On graphiti 66% of agent lines are in new files against 24% of
 human lines. Across the twenty repos in [RESULTS.md](RESULTS.md) the asymmetry runs
 that way on 8 and the other way on 12, so it is not a rule. The
 report prints both shares and says so when they diverge, because most of a gap can
@@ -86,10 +86,10 @@ change at a time, so each choice is a number. The ladder is in
 what follows is how to read it.
 
 Squash attribution is the single largest effect in it, and the one no published tool
-corrects for: it takes the cohort from 45,279 lines to 3,259 and flips the sign of
-the gap from +15.0 to -1.1.
+corrects for: it takes the cohort from 45,992 lines to 3,315 and flips the sign of
+the gap from +15.2 to -1.2.
 
-Age matching is the next largest, worth 6.9 points, and lockfiles and binaries are
+Age matching is the next largest, worth 5.4 points, and lockfiles and binaries are
 worth 8 points on the agent side. `-C` is worth almost nothing here once
 whitespace-insensitive blame is already on, which was not obvious in advance.
 
@@ -107,7 +107,7 @@ the other way.
 
 **The two biggest levers are not in it at all.** The unit of analysis, pooled lines
 versus per-commit median, is worth more on graphiti than every row combined
-(-4.8 pp against -98.2 pp), and it is not a definition of survival but of what you
+(-4.0 pp against -85.4 pp), and it is not a definition of survival but of what you
 are averaging over. The same goes for the new-file split. Both are in the default
 report instead.
 
@@ -222,7 +222,7 @@ Stated plainly, because most of them cannot be fixed.
   with an author date before Claude Code existed. Do not use this to audit anyone.
 - **It does not control for what kind of code each side writes, and that is
   probably fatal to any cross-class comparison.** Agents and humans are not given
-  the same work. On graphiti, 67% of agent lines are in files the same commit
+  the same work. On graphiti, 66% of agent lines are in files the same commit
   created, against 26% for humans, and an external audit that standardised on that
   one covariate moved an earlier version of the gap from +10.0 pp to +0.6 pp, with
   humans *ahead* inside the new-file stratum. The report prints both shares and
@@ -242,10 +242,10 @@ Stated plainly, because most of them cannot be fixed.
   arbitrarily. The tool reports how many revisions and how many lines the file
   removes, which is a disclosure, not a defence.
 - **The agent cohort is usually a handful of commits by a couple of people.** On
-  graphiti, five commits are 80% of the agent cohort and two maintainers are 99% of
+  graphiti, five commits are 79% of the agent cohort and two maintainers are 99% of
   it, and those same two supply half the human baseline. That is a within-person
   design presented as a between-group one. No interval is reported; a
-  commit-clustered one on its 54 measured commits would likely include zero.
+  commit-clustered one on its measured commits would likely include zero, and the panel's is -2.4 to +15.3 pp.
 - **Measurable repos are not a random sample.** Leaving attribution on is a
   per-invocation choice made by the person deciding whether the work is worth
   attributing, and the repos with the most agent history are the agent vendors'
@@ -272,16 +272,16 @@ Stated plainly, because most of them cannot be fixed.
   count scales its kept/edited/gone split proportionally, which assumes the
   clamped part behaves like the counted part. It does not have to.
 - **Winsorising moves the number.** Clamping per-commit volume at p99 changes
-  graphiti's 90-day human baseline from 83.8% to 81.2% on its own. It is the right thing to
+  graphiti's 90-day human baseline from 82.2% to 80.2% on its own. It is the right thing to
   do and it is not free. `--winsor 1` disables it. The cap is one number per repo,
   computed from both classes pooled and applied to every horizon. An earlier
   per-class p99 was a no-op below 100 commits and so only ever clamped the
   baseline, and an earlier per-cohort cap made reported totals go *up* as cohorts
   shrank.
 - **Age matching narrows the baseline, sometimes a lot.** Holding both sides to the
-  same arrival window cut graphiti's human cohort from 145,041 lines to 15,938.
+  same arrival window cut graphiti's human cohort from 144,328 lines to 16,929.
   That is the correct comparison and a much smaller n, and it does not fully fix
-  exposure: graphiti's line-weighted median ages are still 191 and 341 days.
+  exposure: graphiti's line-weighted median ages are still 191 and 355 days.
 - **Every cohort is scored at HEAD, not at the horizon.** "At 90 days" means "had
   at least 90 days to change", so a line that arrived 91 days ago and one that
   arrived 800 days ago are both in the 90-day cohort with nine times the difference

@@ -442,7 +442,7 @@ if (gaps.length) {
   L.push('');
   L.push('## What that adds up to');
   L.push('');
-  L.push('The crude figure says agent lines are kept about six points more often. Every');
+  L.push(`The crude figure says agent lines are kept ${quantile(gaps, 0.5).toFixed(0)} points more often. Every`);
   L.push('control applied to it moves it toward zero, and none of them is optional:');
   L.push('');
   L.push('| holding | median gap |');

@@ -242,8 +242,8 @@ export function classify(message, author) {
  * coarse: on a fixture where an agent wrote 12 of 100 lines in a PR, trailer
  * attribution claims all 100.
  *
- * On getzep/graphiti, 0 of 129 agent-attributed commits have an agent in the
- * author field and 68 are multi-commit squashes carrying 87% of the agent lines.
+ * On getzep/graphiti, 0 of 138 agent-attributed commits have an agent in the
+ * author field and 74 are multi-commit squashes carrying 88% of the agent lines.
  * Treating those as agent-authored is the difference between a headline and a
  * fabrication, so they are reported as `mixed` and left out of both rates.
  *

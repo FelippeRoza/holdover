@@ -24,7 +24,7 @@ agent commit inside a five-commit pull request therefore puts an agent trailer o
 diff that is mostly somebody else's, and every git-history tool that reads trailers
 credits the agent with all of it.
 
-On the repo this tool was built against, that was **87% of the apparent agent
+On the repo this tool was built against, that was **88% of the apparent agent
 lines**. Across the twenty repos in [RESULTS.md](RESULTS.md) it is close to
 all-or-nothing: eight have none of it, because they do not squash-merge, and seven
 have 80% or more, up to 98% on `crewAIInc/crewAI`. A cross-repo rate built from
@@ -38,19 +38,19 @@ at a time, so each is a number:
 $ npx holdover getzep/graphiti --decompose
 
   definition                                             AI n    kept   +edit   human n    kept  gap
-  strictest published definition                       57,629   83.9%   95.2%   198,089   60.0%  +24.0
-  + drop lockfiles, bundles and binaries               45,279   91.9%   94.8%   147,126   76.1%  +15.7
-  + take CI bots out of the human baseline             45,279   91.9%   94.8%   146,508   76.0%  +15.8
-  + follow content across files (-C)                   45,279   92.1%   95.0%   146,508   77.1%  +15.0
-  + honour .git-blame-ignore-revs                      45,279   92.1%   95.0%   146,508   77.1%  +15.0
-  + stop crediting the agent with whole squashed PRs    3,259   75.9%   79.4%   146,508   77.1%   -1.1
-  + cohort by arrival on the default branch (90 days)    2,786   76.4%   79.9%   145,041   76.9%   -0.4
-  + hold both sides to the same arrival window          2,786   76.4%   79.9%    15,938   83.8%   -7.3
-  + winsorise per-commit volume at p99                  2,786   76.4%   79.9%    13,452   81.2%   -4.8
+  strictest published definition                       58,346   84.1%   95.2%   197,372   59.9%  +24.2
+  + drop lockfiles, bundles and binaries               45,992   91.9%   94.9%   146,413   76.0%  +15.9
+  + take CI bots out of the human baseline             45,992   91.9%   94.9%   145,795   75.9%  +16.0
+  + follow content across files (-C)                   45,992   92.1%   95.1%   145,795   77.0%  +15.2
+  + honour .git-blame-ignore-revs                      45,992   92.1%   95.1%   145,795   77.0%  +15.2
+  + stop crediting the agent with whole squashed PRs    3,315   75.7%   79.7%   145,795   77.0%   -1.2
+  + cohort by arrival on the default branch (90 days)    2,842   76.2%   80.3%   144,328   76.8%   -0.6
+  + hold both sides to the same arrival window          2,842   76.2%   80.3%    16,929   82.2%   -6.0
+  + winsorise per-commit volume at p99                  2,842   76.2%   80.3%    14,977   80.2%   -4.0
 ```
 
-Read down the `AI n` column. The squash row takes the cohort from 45,279 lines to
-3,259 and flips the sign of the gap. It is the largest effect in the table and no
+Read down the `AI n` column. The squash row takes the cohort from 45,992 lines to
+3,315 and flips the sign of the gap. It is the largest effect in the table and no
 other tool in [PRIOR-ART.md](PRIOR-ART.md) corrects for it. A headline "AI code
 survival rate" computed from `Co-authored-by` trailers on a squash-merging repo is
 mostly measuring human pull requests.
@@ -65,30 +65,30 @@ does not license you to conclude.
 $ npx holdover getzep/graphiti
 
 getzep/graphiti
-  AI-authored lines        3,259   (from 61 commits with agent attribution)
-  human lines             60,447   (from 659 commits, the baseline)
-  unattributable          21,823   (68 squashed PRs mixing agent and human work — excluded)
+  AI-authored lines        3,315   (from 64 commits with agent attribution)
+  human lines             63,472   (from 650 commits, the baseline)
+  unattributable          25,105   (74 squashed PRs mixing agent and human work — excluded)
 
-  at 30 days           n = 2,970 lines    kept 75.7%   (human 81.3%)
-  at 90 days           n = 2,786 AI lines / 13,452 human lines
+  at 30 days           n = 3,026 lines    kept 75.4%   (human 80.3%)
+  at 90 days           n = 2,842 AI lines / 14,977 human lines
                            AI   human
-    kept                76.4%   81.2%
-    edited               3.5%    7.5%
-    gone                20.1%   11.3%
-    kept, typical        0.0%   98.2%
+    kept                76.2%   80.2%
+    edited               4.1%    8.6%
+    gone                19.7%   11.3%
+    kept, typical        7.1%   92.5%
 
-    gap, pooled        -4.8 pp
-    gap, typical       -98.2 pp
+    gap, pooled        -4.0 pp
+    gap, typical       -85.4 pp
     the two estimators are too far apart to support a conclusion: the pooled
     figure is a few large commits, not a property of the code.
-    median line age    191.3 d (AI)  vs 340.8 d (human), line-weighted
-    in new files        67.0%   26.1%
+    median line age    191.3 d (AI)  vs 355.4 d (human), line-weighted
+    in new files        65.7%   23.8%
     the two cohorts are not the same kind of work: a line in a file its own
     commit created has nothing to be rewritten by. Most of a gap this size
     can be where the agent was pointed rather than how long its code lasts.
-    concentrated: the 5 largest AI commits are 80.0% of that cohort
+    concentrated: the 5 largest AI commits are 78.5% of that cohort
 
-  at 180 days          n = 1,925 lines    kept 69.1%   (human 79.3%)   (low n — indicative only)
+  at 180 days          n = 1,981 lines    kept 69.0%   (human 78.4%)   (low n — indicative only)
 ```
 
 That output is the point, and the warnings under it are not decoration. The
@@ -96,9 +96,9 @@ interesting version of this tool is not the one that prints a big number; it is 
 one that tells you the big number was an artifact.
 
 graphiti is the repo the tool was built against, so it is a worked example rather
-than evidence, and -4.8 pp is not a finding: the per-commit estimator says -98.2,
-the agent cohort is 67% new-file lines against the humans' 26%, and five commits are
-80% of it. The honest report here is *no conclusion in either direction*. That
+than evidence, and -4.0 pp is not a finding: the per-commit estimator says -85.4,
+the agent cohort is 66% new-file lines against the humans' 24%, and five commits are
+79% of it. The honest report here is *no conclusion in either direction*. That
 figure moved three times during development, every time because a bug was fixed or a
 confound was controlled; [METHODOLOGY.md](METHODOLOGY.md) has the steps.
 
@@ -118,8 +118,8 @@ default branch, in three states:
 | `gone` | the file is not at HEAD under any name, or the hunk covering the line only deletes |
 
 Collapsing `edited` into `gone` means a one-character rename scores the same as
-deleting the file. On graphiti, 76.4% of attributable agent lines are unchanged and
-a further 3.5% were edited in place, so 20.1% are actually gone. A two-state
+deleting the file. On graphiti, 76.2% of attributable agent lines are unchanged and
+a further 4.1% were edited in place, so 19.7% are actually gone. A two-state
 measurement reports that as "24% did not survive." It is not, however, the largest
 source of disagreement between the published numbers; that turns out to be squash
 attribution. See [the decomposition](METHODOLOGY.md#where-the-disagreeing-numbers-come-from).
@@ -138,12 +138,12 @@ attribution. See [the decomposition](METHODOLOGY.md#where-the-disagreeing-number
 Measured with the shipped defaults at the 90-day horizon, at the tips recorded in
 [RESULTS.md](RESULTS.md#provenance). This is the whole case for reporting the
 diagnostics rather than the number. All twenty repos are in
-[RESULTS.md](RESULTS.md). The median pooled gap there is +6.5 pp, and every control
-applied to it moves it toward zero: +2.4 pp once a line rewritten in place counts
-as surviving, +2.5 pp held to whether a line sits in a file its own commit created,
-+0.4 pp on the four repos whose two cohorts have comparable exposure, and +0.4 pp on
-the repos whose owner does not sell an agent. A bootstrap over repos and then commits
-within them spans -2.1 to +15.9 pp. Six of the fourteen repos above the line floor
+[RESULTS.md](RESULTS.md). The median pooled gap there is +3.9 pp, and every control
+applied to it moves it toward zero: +2.2 pp once a line rewritten in place counts
+as surviving, +2.3 pp held to whether a line sits in a file its own commit created,
+and +0.4 pp both on the repos whose two cohorts have comparable exposure and on the
+repos whose owner does not sell an agent. A bootstrap over repos and then commits
+within them spans -2.4 to +15.3 pp. Six of the fourteen repos above the line floor
 support no conclusion at all, because their own two estimators disagree.
 
 So this panel is a null result with a positive point estimate. That is the finding,
@@ -152,17 +152,17 @@ and it is the opposite of what a single number would have told you.
 | repo | AI n | AI kept | human kept | pooled | typical | new-file share | read with |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `Aider-AI/aider` | 48,474 | 66.6% | 44.4% | **+22.2 pp** | +19.7 pp | 6% vs 11% | nothing tripped, and stable at every horizon. The cleanest result here |
-| `browser-use/browser-use` | 14,238 | 20.5% | 41.6% | **-21.1 pp** | -13.4 pp | 48% vs 37% | nothing tripped either, and it runs the other way |
-| `openai/codex` | 11,394 | 60.2% | 58.7% | +1.5 pp | +5.8 pp | 25% vs 32% | nothing tripped either, but the gap is negative at 30 days |
-| `getzep/graphiti` | 2,786 | 76.4% | 81.2% | -4.8 pp | -98.2 pp | 67% vs 26% | estimators 93 pp apart, 5 commits are 80% of the cohort, so no conclusion |
+| `browser-use/browser-use` | 16,047 | 20.7% | 41.8% | **-21.1 pp** | -12.8 pp | 49% vs 37% | nothing tripped either, and it runs the other way |
+| `openai/codex` | 11,412 | 60.2% | 58.8% | +1.5 pp | +5.8 pp | 25% vs 32% | nothing tripped, but the gap is -5.6 pp at 30 days |
+| `getzep/graphiti` | 2,842 | 76.2% | 80.2% | -4.0 pp | -85.4 pp | 66% vs 24% | estimators 81 pp apart, 5 commits are 79% of the cohort, so no conclusion |
 | `OpenHands/OpenHands` | — | — | — | — | — | — | `unmeasurable`: the tree was replaced wholesale, so neither class retains 1% |
 
-Read the *level* as well as the gap: 66.6%, 20.5%, 60.2%, 76.4%. A headline "AI code
+Read the *level* as well as the gap: 66.6%, 20.7%, 60.2%, 76.2%. A headline "AI code
 survives N% of the time" describes a repo, not agents. The two cleanest rows here
 point in opposite directions by more than 20 points each.
 
 **The gap is not stable in the horizon.** On codex it runs -5.6 pp at 30 days,
-+1.5 pp at 90 and +3.1 pp at 180, crossing zero between the first two. Aider's
++1.5 pp at 90 and +3.0 pp at 180, crossing zero between the first two. Aider's
 barely moves: 22.0, 22.2, 22.5. Whether one horizon speaks for a repo is a
 property of the repo, and you cannot tell which kind you have without all three.
 

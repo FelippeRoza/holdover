@@ -83,7 +83,7 @@ export async function addedLines(cwd, branch, wanted, skip = skipPath) {
     cur.added += count;
     // Lines in a file the same commit created have nothing to be rewritten by, so
     // the split between new and existing files is a confound, not a detail. On one
-    // real repo 67% of agent lines were in newly created files against 26% of human
+    // real repo 66% of agent lines were in newly created files against 24% of human
     // lines, and standardising on that single covariate took the reported gap from
     // +10.0 pp to +0.6 pp.
     if (isNew) { cur.addedInNewFiles += count; cur.newPaths.add(path); }

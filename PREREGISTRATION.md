@@ -35,9 +35,9 @@ and including if the difference is not distinguishable from zero.
   clone, and a repository whose only agent attribution sits on multi-commit squash
   commits.
 - **The pilot repository is excluded.** `getzep/graphiti` was used to build and
-  debug the tool, so it cannot also be evidence. Its corrected result (-4.8 pp
-  pooled, -98.2 pp per-commit, n = 2,786 agent lines, 67% of agent lines in
-  newly created files against 26% for humans) supports no conclusion in either
+  debug the tool, so it cannot also be evidence. Its corrected result (-4.0 pp
+  pooled, -85.4 pp per-commit, n = 2,842 agent lines, 66% of agent lines in
+  newly created files against 24% for humans) supports no conclusion in either
   direction and is reported only as a worked example of what the corrections are
   worth.
 
@@ -79,8 +79,8 @@ and including if the difference is not distinguishable from zero.
   the point of fixing it here.
 - **Two estimators, both published, neither alone.** The pooled line-weighted
   share within a repository, and the median per-commit rate. They answer different
-  questions and on the pilot repository they differ by 93 points: -4.8 pp pooled
-  against -98.2 pp per-commit, because the five largest agent commits are 80% of
+  questions and on the pilot repository they differ by 81 points: -4.0 pp pooled
+  against -85.4 pp per-commit, because the five largest agent commits are 80% of
   the cohort. A repository where the two estimators disagree in sign, or differ by
   more than 20 points, will be reported as supporting no conclusion in either
   direction.
@@ -89,8 +89,8 @@ and including if the difference is not distinguishable from zero.
   with strata only one class reaches dropped. Commit size differs systematically
   between the classes and is the dominant confound in the pooled figure.
 - **New-file standardisation.** And standardised on whether a line sits in a file
-  its own commit created, which on the pilot repository is 67% of agent lines
-  against 26% of human lines. `--json` exposes `keptInNewFiles` per commit so this
+  its own commit created, which on the pilot repository is 66% of agent lines
+  against 24% of human lines. `--json` exposes `keptInNewFiles` per commit so this
   can be recomputed without rerunning the tool. An external audit of an earlier version found that
   this single covariate moved the gap from +10.0 pp to +0.6 pp, with humans ahead
   inside the new-file stratum. Both the crude and the standardised estimate will be
