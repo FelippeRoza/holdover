@@ -1,6 +1,7 @@
 # holdover
 
 [![CI](https://github.com/FelippeRoza/holdover/actions/workflows/ci.yml/badge.svg)](https://github.com/FelippeRoza/holdover/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/holdover)](https://www.npmjs.com/package/holdover)
 
 How much of what a coding agent wrote is still in your repo, and how that compares
 to the humans working on the same repo, plus the checks that tell you when the
