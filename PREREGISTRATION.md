@@ -95,6 +95,28 @@ and including if the difference is not distinguishable from zero.
   this single covariate moved the gap from +10.0 pp to +0.6 pp, with humans ahead
   inside the new-file stratum. Both the crude and the standardised estimate will be
   published; if they disagree, the standardised one is the result.
+- **Repository-level covariates, declared before the panel runs.** No single rate
+  is expected to hold across organisations, so the per-repository figures are the
+  result and the covariates below are how they get grouped. All are recorded for
+  every repository, and the paired difference is reported stratified on each one
+  taken alone. This list is closed as of this commit: a covariate not named here
+  will not be introduced after the panel is measured.
+  - **Merge workflow**, as the share of agent-attributed lines sitting on
+    multi-commit squashes. On the twenty-repo showcase this is bimodal, eight
+    repositories at zero and seven above 80%.
+  - **Agent share of commits on the default branch.**
+  - **Whether the repository's owner sells a coding agent**, hand-coded from the
+    owner rather than the code, and published as the coding so it can be disputed.
+  - **How few people each cohort is**, as the distinct author count and the share
+    held by the largest author, reported per class. A cohort of three identities
+    is a within-person comparison presented as a between-group one.
+  - **Cohort exposure**, as the ratio of the two line-weighted median ages.
+  - **Repository size**, as human-authored lines over its whole history.
+  An exploratory pass over the fourteen showcase repositories found no correlation
+  with the gap beyond exposure, r = 0.59, which is a known confound and already
+  reported, and agent share, r = 0.37. With fourteen points and six covariates that
+  is not evidence of anything, and it is recorded here so that finding it again on
+  300 repositories counts as confirmation rather than a discovery.
 - **Unit of analysis is the repository.** Across repositories the report is the
   median and the interquartile range of the per-repository rate. No pooled
   line-weighted average across repositories will be published, because one

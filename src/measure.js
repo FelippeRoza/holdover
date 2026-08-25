@@ -180,6 +180,17 @@ function tally(rows) {
  * line-weighted medians were 191.3 and 340.8, nearly double the exposure on the
  * human side, in a comparison whose whole purpose is to control for exposure.
  */
+/** How few people a cohort is, which decides whether it is a group or a person. */
+function byAuthor(rows) {
+  const lines = new Map();
+  for (const r of rows) lines.set(r.author, (lines.get(r.author) ?? 0) + r.added);
+  const total = [...lines.values()].reduce((a, b) => a + b, 0);
+  return {
+    authors: lines.size,
+    topAuthorShare: total ? Math.max(0, ...lines.values()) / total : null,
+  };
+}
+
 function lineWeightedMedianAge(rows, reference) {
   const items = rows
     .filter((r) => r.arrival !== null && r.added > 0)
@@ -283,6 +294,7 @@ export async function measure(startDir, opts = {}) {
   for (const sha of ignored) ignoredLines += added.get(sha)?.added ?? 0;
 
   const klassOf = new Map(identities.map((r) => [r.sha, r.klass]));
+  const authorOf = new Map(identities.map((r) => [r.sha, r.author]));
   const byClass = { agent: [], human: [], mixed: [] };
   for (const f of fates) {
     const k = klassOf.get(f.sha);
@@ -295,7 +307,7 @@ export async function measure(startDir, opts = {}) {
     // instead by the invariant in the test suite: every line in the measured tree
     // must be attributed exactly once. That invariant caught a parser that
     // over-counted by 1.7% on a real repo.
-    byClass[k].push({ ...f, klass: k, arrival: arrival.get(f.sha) ?? null });
+    byClass[k].push({ ...f, klass: k, arrival: arrival.get(f.sha) ?? null, author: authorOf.get(f.sha) });
   }
 
   // Age is the confound that makes a naive baseline meaningless. On one real repo
@@ -332,6 +344,7 @@ export async function measure(startDir, opts = {}) {
         const w = winsorise(picked, cap);
         return {
           ...tally(w.rows),
+          ...byAuthor(w.rows),
           capped: w.capped,
           trimmed: w.trimmed,
           medianAgeDays: lineWeightedMedianAge(picked, reference),
@@ -348,8 +361,8 @@ export async function measure(startDir, opts = {}) {
     });
 
   const all = {
-    agent: tally(winsorise(byClass.agent, cap).rows),
-    human: tally(winsorise(byClass.human, cap).rows),
+    agent: { ...tally(winsorise(byClass.agent, cap).rows), ...byAuthor(winsorise(byClass.agent, cap).rows) },
+    human: { ...tally(winsorise(byClass.human, cap).rows), ...byAuthor(winsorise(byClass.human, cap).rows) },
     mixed: tally(winsorise(byClass.mixed, cap).rows),
   };
 
