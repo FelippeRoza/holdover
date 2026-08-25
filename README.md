@@ -25,8 +25,14 @@ diff that is mostly somebody else's, and every git-history tool that reads trail
 credits the agent with all of it.
 
 On the repo this tool was built against, that was **87% of the apparent agent
-lines**. `--decompose` walks from the strictest published definition to this one,
-one choice at a time, so each is a number:
+lines**. Across the twenty repos in [RESULTS.md](RESULTS.md) it is close to
+all-or-nothing: eight have none of it, because they do not squash-merge, and seven
+have 80% or more, up to 98% on `crewAIInc/crewAI`. A cross-repo rate built from
+trailers is therefore partly a measurement of which repos in the sample use the
+squash button.
+
+`--decompose` walks from the strictest published definition to this one, one choice
+at a time, so each is a number:
 
 ```
 $ npx holdover getzep/graphiti --decompose
@@ -132,10 +138,10 @@ Measured with the shipped defaults at the 90-day horizon, at the tips recorded i
 diagnostics rather than the number. All twenty repos are in
 [RESULTS.md](RESULTS.md), where the median pooled gap is +6.5 pp with an
 interquartile range of +0.4 to +14.9. Held to commit-size strata that becomes
-+9.2 pp, and held to whether a line sits in a file its own commit created, which
-the pre-registration calls the deciding covariate, **+2.5 pp**. Six of the
-fourteen repos above the line floor support no conclusion at all, because their
-two estimators disagree.
++9.2 pp, and held to whether a line sits in a file its own commit created,
+**+2.5 pp**. The pre-registration says the standardised figure is the result
+where the two disagree. Six of the fourteen repos above the line floor support
+no conclusion at all, because their two estimators disagree.
 
 | repo | AI n | AI kept | human kept | pooled | typical | new-file share | read with |
 | --- | --- | --- | --- | --- | --- | --- | --- |

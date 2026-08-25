@@ -216,6 +216,7 @@ function summarise(r) {
   return {
     c, pooled, typical, composition, flags, sizeStd, newFileStd,
     mixed: r.all?.mixed?.lines ?? 0,
+    agentLines: r.all?.agent?.lines ?? 0,
     horizons: r.cohorts.map((h) => ({ days: h.days, ai: pct(h.agent.kept, h.agent.lines), human: pct(h.human.kept, h.human.lines), n: h.agent.lines })),
   };
 }
@@ -261,6 +262,8 @@ if (gaps.length) {
     && (r.pooled * r.typical < 0 || Math.abs(r.pooled - r.typical) > SPREAD));
   const survivors = scoring.filter((r) => !voided.includes(r)).map((r) => r.pooled);
   const refs = rows.map((r) => r.reference).filter(Boolean).sort((a, b) => a - b);
+  const squash = rows.filter((r) => r.mixed !== undefined && r.agentLines !== undefined)
+    .map((r) => (r.mixed + r.agentLines ? (r.mixed / (r.mixed + r.agentLines)) * 100 : 0));
   const typicals = scoring.map((r) => r.typical).filter((v) => v !== null);
   L.push(`- ${measured.length} of ${eligible} repos measurable, ${scoring.length} above the pre-registered 2,000-line floor.`);
   const stds = scoring.map((r) => r.sizeStd?.gap).filter((v) => v !== undefined && v !== null);
@@ -278,7 +281,13 @@ if (gaps.length) {
   L.push(`- New-file share more than ${COMPOSITION * 100} pp apart: **${scoring.filter((r) => r.composition > COMPOSITION).length} of ${scoring.length}** repos, where the two cohorts are not the same kind of work.`);
   if (refs.length > 1) {
     const spread = Math.round((refs.at(-1) - refs[0]) / 86400);
-    L.push(`- The tips these rows were measured at span **${spread} days**. Cohorts count back from`);
+    L.push(`- Squash contamination is close to all-or-nothing. Across the ${squash.length} repos with`);
+  L.push(`  attribution to read, the pilot included, **${squash.filter((v) => v === 0).length} have none of it** because they do not`);
+  L.push(`  squash-merge, and **${squash.filter((v) => v >= 80).length} have 80% or more** of their agent-attributed lines on`);
+  L.push(`  squashes that mix human work. The median, ${quantile(squash, 0.5).toFixed(1)}%, is the least useful number here.`);
+  L.push('  A cross-repo rate built from trailers is partly a measurement of which repos in');
+  L.push('  the sample use the squash button.');
+  L.push(`- The tips these rows were measured at span **${spread} days**. Cohorts count back from`);
     L.push('  each repo\'s own tip, so the rows cover different calendar windows and the median');
     L.push('  pools them.');
   }

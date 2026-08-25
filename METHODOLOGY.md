@@ -73,6 +73,13 @@ comment in `survival.py`, which its own author rejected; see
 [PRIOR-ART.md](PRIOR-ART.md). The third is quoted second-hand and this project has
 not traced it to a source, which is itself the problem.
 
+The ladder below is **not** a correction of that paper. It establishes agent
+authorship from the AIDev dataset, where an agent bot opened the pull request, so
+the diff is the agent's by construction and a squash merge mixes nothing in. Every
+rung here applies to tools and scans that read `Co-authored-by` trailers, which is
+what any tool can do on a repo it merely cloned, and which is what this tool did
+before the squash rung was added.
+
 `holdover --decompose` walks from the strictest of those definitions to this one, one
 change at a time, so each choice is a number. The ladder is in
 [README.md](README.md#most-of-the-ai-written-code-in-these-measurements-is-human);
