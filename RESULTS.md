@@ -66,8 +66,8 @@ did not, and that is exactly why both are here.
 - New-file share more than 15 pp apart: **5 of 14** repos, where the two cohorts are not the same kind of work.
 - Squash contamination is close to all-or-nothing. Across the 20 repos with
   attribution to read, the pilot included, **8 have none of it** because they do not
-  squash-merge, and **6 have 80% or more** of their agent-attributed lines on
-  squashes that mix human work. The median, 3.1%, is the least useful number here.
+  squash-merge, and **7 have 80% or more** of the agent-attributed lines in their
+  whole history on squashes that mix human work. The median, 5.1%, says nothing.
   A cross-repo rate built from trailers is partly a measurement of which repos in
   the sample use the squash button.
 - The tips these rows were measured at span **102 days**. Cohorts count back from

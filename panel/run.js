@@ -371,8 +371,11 @@ if (gaps.length) {
     && (r.pooled * r.typical < 0 || Math.abs(r.pooled - r.typical) > SPREAD));
   const survivors = scoring.filter((r) => !voided.includes(r)).map((r) => r.pooled);
   const refs = rows.map((r) => r.reference).filter(Boolean).sort((a, b) => a - b);
-  const squash = rows.filter((r) => r.mixed !== undefined && r.agentLines !== undefined)
-    .map((r) => (r.mixed + r.agentLines ? (r.mixed / (r.mixed + r.agentLines)) * 100 : 0));
+  // Over the repo's whole history, not the cohort: it describes a merge workflow,
+  // not a 90-day window. Both terms have to be on the same clock.
+  const squash = rows.filter((r) => r.lifetimeMixed !== undefined && r.agentLines !== undefined)
+    .map((r) => (r.lifetimeMixed + r.agentLines
+      ? (r.lifetimeMixed / (r.lifetimeMixed + r.agentLines)) * 100 : 0));
   const typicals = scoring.map((r) => r.typical).filter((v) => v !== null);
   L.push(`- ${measured.length} of ${eligible} repos measurable, ${scoring.length} above the pre-registered 2,000-line floor.`);
   const stds = scoring.map((r) => r.sizeStd?.gap).filter((v) => v !== undefined && v !== null);
@@ -427,8 +430,8 @@ if (gaps.length) {
     const spread = Math.round((refs.at(-1) - refs[0]) / 86400);
     L.push(`- Squash contamination is close to all-or-nothing. Across the ${squash.length} repos with`);
   L.push(`  attribution to read, the pilot included, **${squash.filter((v) => v === 0).length} have none of it** because they do not`);
-  L.push(`  squash-merge, and **${squash.filter((v) => v >= 80).length} have 80% or more** of their agent-attributed lines on`);
-  L.push(`  squashes that mix human work. The median, ${quantile(squash, 0.5).toFixed(1)}%, is the least useful number here.`);
+  L.push(`  squash-merge, and **${squash.filter((v) => v >= 80).length} have 80% or more** of the agent-attributed lines in their`);
+  L.push(`  whole history on squashes that mix human work. The median, ${quantile(squash, 0.5).toFixed(1)}%, says nothing.`);
   L.push('  A cross-repo rate built from trailers is partly a measurement of which repos in');
   L.push('  the sample use the squash button.');
   L.push(`- The tips these rows were measured at span **${spread} days**. Cohorts count back from`);
