@@ -133,7 +133,7 @@ attribution. See [the decomposition](METHODOLOGY.md#where-the-disagreeing-number
 - **Anything about a repo with no agent attribution.** That prints
   `unmeasurable`, not 0%.
 
-## Five repos, five different answers
+## Four repos, four different answers
 
 Measured with the shipped defaults at the 90-day horizon, at the tips recorded in
 [RESULTS.md](RESULTS.md#provenance). This is the whole case for reporting the
@@ -156,7 +156,6 @@ and it is the opposite of what a single number would have told you.
 | `browser-use/browser-use` | 16,047 | 20.7% | 41.8% | **-21.1 pp** | -12.8 pp | 49% vs 37% | nothing tripped either, and it runs the other way |
 | `openai/codex` | 11,412 | 60.2% | 58.8% | +1.5 pp | +5.8 pp | 25% vs 32% | nothing tripped, but the gap is -5.6 pp at 30 days |
 | `getzep/graphiti` | 2,842 | 76.2% | 80.2% | -4.0 pp | -85.4 pp | 66% vs 24% | estimators 81 pp apart, 5 commits are 79% of the cohort, so no conclusion |
-| `OpenHands/OpenHands` | — | — | — | — | — | — | `unmeasurable`: the tree was replaced wholesale, so neither class retains 1% |
 
 Read the *level* as well as the gap: 66.6%, 20.7%, 60.2%, 76.2%. A headline "AI code
 survives N% of the time" describes a repo, not agents. The two cleanest rows here
