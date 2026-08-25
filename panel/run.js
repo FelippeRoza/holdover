@@ -346,6 +346,23 @@ L.push('any measurement. The rows below are hand-picked recognisable repos, filt
 L.push('a commit search found attribution at all, so they are a convenience sample and cannot');
 L.push('test the claim. Read them as twenty worked examples of what the diagnostics look like.');
 L.push('');
+L.push('## Earlier published results');
+L.push('');
+L.push('`src/attribution.js` changed twice after the pre-registration was written, and');
+L.push('PREREGISTRATION.md requires that the panel be re-run in full and every result');
+L.push('published. The rule change was not neutral, so here they all are:');
+L.push('');
+L.push('| attribution rules | median pooled gap |');
+L.push('| --- | --- |');
+L.push('| whole vendor domains count as agent | +3.0 pp (IQR -5.1 to +10.7) |');
+L.push('| a tool-shaped local part is required | +6.5 pp (IQR +0.4 to +14.9) |');
+L.push('| the tool name must match the domain that ships it | the table below |');
+L.push('');
+L.push('The first rule counted every hand-written commit by anyone at OpenAI, Anthropic,');
+L.push('Cursor, Charm or Aider as agent work; `openai/codex` read 7,733 agent commits');
+L.push('under it against 87 under the second. Its interval included zero, the second\'s');
+L.push('did not, and that is exactly why both are here.');
+L.push('');
 L.push('## Summary');
 L.push('');
 if (gaps.length) {

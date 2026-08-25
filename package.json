@@ -1,6 +1,6 @@
 {
   "name": "holdover",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Measure how much of an AI coding agent's output is still in a git repo, and compare it to the humans on the same repo.",
   "homepage": "https://github.com/FelippeRoza/holdover",
   "repository": {
